@@ -4,144 +4,46 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/google/uuid"
-
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 	"github.com/barnowlsnest/go-datalib/pkg/queue"
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
-type (
-	// NodeID represents a unique identifier for nodes in the graph.
-	// It's an alias for uint64 to provide type safety and clarity.
-	NodeID = uint64
+// AdjacencyGroups implements a graph data structure with grouped nodes.
+//
+// This structure provides an efficient representation of a directed graph
+// where nodes are organized into named groups. It maintains three core
+// data structures for optimal performance:
+//   - groups: Maps group names to sets of nodes
+//   - backRefs: Maps nodes to sets of nodes that reference them
+//   - adjacency: Maps source nodes to their outgoing edges
+//
+// Key features:
+//   - Efficient group-based node organization
+//   - Fast edge lookup and traversal
+//   - Cycle detection capabilities
+//   - Back-reference tracking for reverse traversal
+//   - Support for complex graph algorithms
+//
+// The structure is designed to support various graph algorithms including
+// cycle detection, topological sorting, and efficient neighbor traversal.
+//
+// Thread Safety:
+// AdjacencyGroups is not thread-safe. Concurrent access requires external
+// synchronization mechanisms.
+type AdjacencyGroups struct {
+	// groups maps group names to sets of node IDs belonging to each group.
+	// This allows for efficient group-based operations and queries.
+	groups map[GroupName]map[NodeID]struct{}
 
-	// EdgeID represents a unique identifier for edges in the graph.
-	// It's an alias for uint64 to provide type safety and clarity.
-	EdgeID = uint64
+	// backRefs maps each node to the set of nodes that have edges pointing to it.
+	// This enables efficient reverse traversal and dependency analysis.
+	backRefs map[NodeID]map[NodeID]struct{}
 
-	// GroupName represents the name of a group within the graph structure.
-	// Groups are used to organize nodes into logical collections.
-	GroupName = string
-
-	// Name represents a human-readable name for graph entities.
-	// It's an alias for string to provide semantic clarity.
-	Name = string
-
-	// ID represents a universally unique identifier using UUID.
-	// It's an alias for uuid.UUID to provide semantic clarity.
-	ID = uuid.UUID
-
-	// GroupNode represents a node that belongs to a specific group.
-	//
-	// This structure combines a node identifier with its group membership,
-	// allowing for efficient organization and querying of nodes within
-	// the graph structure.
-	GroupNode struct {
-		// ID is the unique identifier for this node.
-		ID NodeID
-
-		// Group is the name of the group this node belongs to.
-		Group GroupName
-	}
-
-	// AdjacencyEdge represents a directed edge between two nodes in the graph.
-	//
-	// This structure contains all the information needed to describe a
-	// relationship between nodes, including the source, destination, and
-	// a unique edge identifier.
-	AdjacencyEdge struct {
-		// From is the source node ID of the edge.
-		From NodeID
-
-		// To is the destination node ID of the edge.
-		To NodeID
-
-		// Edge is the unique identifier for this edge.
-		Edge EdgeID
-	}
-
-	// BackRefEdge represents a reverse reference edge for efficient traversal.
-	//
-	// Back-references allow for efficient reverse traversal of the graph
-	// by maintaining inverse relationships. This is particularly useful
-	// for finding all nodes that point to a specific node.
-	BackRefEdge struct {
-		// From is the source node ID of the back-reference.
-		From NodeID
-
-		// To is the destination node ID of the back-reference.
-		To NodeID
-	}
-
-	// OnAdjacencyEdgeFn is a callback function type for processing adjacency edges.
-	//
-	// This function type is used in graph traversal operations where each
-	// edge needs to be processed. The function receives an AdjacencyEdge
-	// and an error parameter, allowing for both successful edge processing
-	// and error handling during traversal.
-	//
-	// Parameters:
-	//   - AdjacencyEdge: The edge being processed
-	//   - error: Any error that occurred during edge processing, or nil
-	OnAdjacencyEdgeFn func(AdjacencyEdge, error)
-
-	// AdjacencyGroups implements a graph data structure with grouped nodes.
-	//
-	// This structure provides an efficient representation of a directed graph
-	// where nodes are organized into named groups. It maintains three core
-	// data structures for optimal performance:
-	//   - groups: Maps group names to sets of nodes
-	//   - backRefs: Maps nodes to sets of nodes that reference them
-	//   - adjacency: Maps source nodes to their outgoing edges
-	//
-	// Key features:
-	//   - Efficient group-based node organization
-	//   - Fast edge lookup and traversal
-	//   - Cycle detection capabilities
-	//   - Back-reference tracking for reverse traversal
-	//   - Support for complex graph algorithms
-	//
-	// The structure is designed to support various graph algorithms including
-	// cycle detection, topological sorting, and efficient neighbor traversal.
-	//
-	// Thread Safety:
-	// AdjacencyGroups is not thread-safe. Concurrent access requires external
-	// synchronization mechanisms.
-	AdjacencyGroups struct {
-		// groups maps group names to sets of node IDs belonging to each group.
-		// This allows for efficient group-based operations and queries.
-		groups map[GroupName]map[NodeID]struct{}
-
-		// backRefs maps each node to the set of nodes that have edges pointing to it.
-		// This enables efficient reverse traversal and dependency analysis.
-		backRefs map[NodeID]map[NodeID]struct{}
-
-		// adjacency maps each source node to its outgoing edges.
-		// The inner map associates destination nodes with edge IDs.
-		adjacency map[NodeID]map[NodeID]EdgeID
-	}
-
-	// Graph represents a complete graph structure with metadata.
-	//
-	// This structure combines the core graph functionality from AdjacencyGroups
-	// with additional metadata such as a unique identifier and human-readable name.
-	// It provides a high-level interface for working with graphs in applications.
-	//
-	// The Graph embeds AdjacencyGroups, inheriting all its methods and functionality
-	// while adding identity and naming capabilities.
-	Graph struct {
-		// AdjacencyGroups provides the core graph functionality.
-		// All graph operations are delegated to this embedded structure.
-		*AdjacencyGroups
-
-		// id is the unique identifier for this graph instance.
-		id ID
-
-		// name is the human-readable name for this graph.
-		name Name
-	}
-)
+	// adjacency maps each source node to its outgoing edges.
+	// The inner map associates destination nodes with edge IDs.
+	adjacency map[NodeID]map[NodeID]EdgeID
+}
 
 // NewAdjacencyGroups creates a new empty AdjacencyGroups instance.
 //
@@ -839,163 +741,4 @@ func (ag *AdjacencyGroups) ListGroups() []GroupName {
 		i++
 	}
 	return res
-}
-
-// NewGraph creates a new Graph with the specified ID, name, and adjacency groups.
-//
-// This constructor creates a Graph instance that wraps an existing
-// AdjacencyGroups structure with additional metadata. The graph inherits
-// all functionality from the provided AdjacencyGroups.
-//
-// Parameters:
-//   - id: The unique identifier for this graph instance
-//   - name: The human-readable name for this graph
-//   - groups: The AdjacencyGroups instance to wrap
-//
-// Returns:
-//   - A new Graph instance with the specified configuration
-//
-// Example:
-//
-//	id := uuid.New()
-//	ag := NewAdjacencyGroups()
-//	ag.AddGroup("users")
-//
-//	graph := NewGraph(id, "user-relationships", ag)
-//	fmt.Printf("Created graph: %s\n", graph.Name())
-func NewGraph(id ID, name string, groups *AdjacencyGroups) *Graph {
-	return &Graph{
-		id:              id,
-		name:            name,
-		AdjacencyGroups: groups,
-	}
-}
-
-// NewEmptyGraph creates a new Graph with empty adjacency groups.
-//
-// This convenience constructor creates a Graph with a new, empty
-// AdjacencyGroups instance. It's equivalent to calling NewGraph
-// with a newly created AdjacencyGroups.
-//
-// Parameters:
-//   - id: The unique identifier for this graph instance
-//   - name: The human-readable name for this graph
-//
-// Returns:
-//   - A new Graph instance with empty adjacency groups
-//
-// Example:
-//
-//	id := uuid.New()
-//	graph := NewEmptyGraph(id, "my-graph")
-//
-//	// Graph is ready for use
-//	graph.AddGroup("nodes")
-//	graph.AddNode(GroupNode{Id: 1, Group: "nodes"})
-func NewEmptyGraph(id ID, name string) *Graph {
-	return NewGraph(id, name, NewAdjacencyGroups())
-}
-
-// ID returns the unique identifier of this graph.
-//
-// The ID is immutable after graph creation and serves as the primary
-// way to identify and reference this graph instance.
-//
-// Returns:
-//   - The UUID assigned to this graph during creation
-//
-// Example:
-//
-//	graph := NewEmptyGraph(uuid.New(), "my-graph")
-//	fmt.Printf("Graph ID: %s\n", graph.ID())
-func (g *Graph) ID() ID {
-	return g.id
-}
-
-// Name returns the human-readable name of this graph.
-//
-// The name is immutable after graph creation and provides a
-// descriptive identifier for this graph instance.
-//
-// Returns:
-//   - The name assigned to this graph during creation
-//
-// Example:
-//
-//	graph := NewEmptyGraph(uuid.New(), "user-relationships")
-//	fmt.Printf("Graph name: %s\n", graph.Name())
-func (g *Graph) Name() Name {
-	return g.name
-}
-
-// NextID generates and returns the next sequential node ID for this graph.
-//
-// This method uses the global serial ID generator with the graph's name
-// as the key, ensuring that each graph maintains its own independent
-// sequence of node IDs. The generated IDs are unique within the context
-// of this graph's name.
-//
-// Returns:
-//   - The next sequential NodeID for this graph (starting from 1)
-//
-// Thread Safety:
-// This method is thread-safe and can be called concurrently from
-// multiple goroutines.
-//
-// Example:
-//
-//	graph := NewEmptyGraph(uuid.New(), "my-graph")
-//
-//	id1 := graph.NextID() // Returns 1
-//	id2 := graph.NextID() // Returns 2
-//	id3 := graph.NextID() // Returns 3
-//
-//	// Use the generated ID to create nodes
-//	node := GroupNode{ID: id1, Group: "users"}
-func (g *Graph) NextID() NodeID {
-	return serial.Seq().Next(g.name)
-}
-
-// CurrentID returns the current node ID value for this graph without incrementing.
-//
-// This method provides read-only access to the current ID counter value
-// for this graph. It's useful for checking the current state without
-// generating a new ID.
-//
-// Returns:
-//   - The current NodeID value for this graph (0 if never incremented)
-//
-// Thread Safety:
-// This method is thread-safe and can be called concurrently from
-// multiple goroutines.
-//
-// Example:
-//
-//	graph := NewEmptyGraph(uuid.New(), "my-graph")
-//
-//	current := graph.CurrentID() // Returns 0 (not yet incremented)
-//	graph.NextID()               // Returns 1
-//	current = graph.CurrentID()  // Returns 1
-func (g *Graph) CurrentID() NodeID {
-	return serial.Seq().Current(g.name)
-}
-
-// IsProvidable indicates whether this graph can be provided/used.
-//
-// This method always returns true, indicating that Graph instances
-// are always ready for use. This method may be part of an interface
-// contract for providable entities in the system.
-//
-// Returns:
-//   - Always returns true
-//
-// Example:
-//
-//	graph := NewEmptyGraph(uuid.New(), "my-graph")
-//	if graph.IsProvidable() {
-//		// Graph is ready for use
-//		graph.AddGroup("nodes")
-//	}
-func (g *Graph) IsProvidable() bool {
-	return g != nil
 }
