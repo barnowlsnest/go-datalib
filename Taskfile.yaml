@@ -29,6 +29,16 @@ tasks:
     cmds:
       - go test -cover '{{.ALL}}'
 
+  go-bench:
+    desc: Run benchmarks with memory stats
+    cmds:
+      - go test -bench=. -benchmem '{{.ALL}}'
+
+  go-bench-serial:
+    desc: Run serial package benchmarks
+    cmds:
+      - go test -bench=. -benchmem ./pkg/serial
+
   go-lint:
     cmds:
       - golangci-lint run --fix
