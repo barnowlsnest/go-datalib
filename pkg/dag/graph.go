@@ -16,10 +16,10 @@ type Graph struct {
 	// AdjacencyGroups provides the core graph functionality.
 	// All graph operations are delegated to this embedded structure.
 	*AdjacencyGroups
-
+	
 	// id is the unique identifier for this graph instance.
 	id ID
-
+	
 	// name is the human-readable name for this graph.
 	name Name
 }
@@ -180,5 +180,5 @@ func (g *Graph) CurrentID() NodeID {
 //		graph.AddGroup("nodes")
 //	}
 func (g *Graph) IsProvidable() bool {
-	return g != nil
+	return g != nil && g.AdjacencyGroups != nil
 }
