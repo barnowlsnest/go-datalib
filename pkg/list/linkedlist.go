@@ -31,10 +31,10 @@ type LinkedList struct {
 	// size tracks the current number of nodes in the list.
 	// It's automatically maintained by all modification operations.
 	size int
-	
+
 	// head points to the first node in the list, or nil if the list is empty.
 	head *node.Node
-	
+
 	// tail points to the last node in the list, or nil if the list is empty.
 	tail *node.Node
 }
@@ -82,7 +82,7 @@ func (list *LinkedList) Push(n *node.Node) {
 	defer func() {
 		list.size++
 	}()
-	
+
 	if list.tail == nil {
 		list.head = n
 		list.tail = n
@@ -124,7 +124,7 @@ func (list *LinkedList) Pop() *node.Node {
 	if list.tail == nil {
 		return nil
 	}
-	
+
 	pTail := list.tail
 	if list.tail.Prev() != nil {
 		list.tail = list.tail.Prev()
@@ -133,7 +133,7 @@ func (list *LinkedList) Pop() *node.Node {
 		list.head = nil
 		list.tail = nil
 	}
-	
+
 	return list.cleanAndCopyNode(pTail)
 }
 
@@ -161,7 +161,7 @@ func (list *LinkedList) Unshift(n *node.Node) {
 	defer func() {
 		list.size++
 	}()
-	
+
 	if list.head == nil {
 		list.head = n
 		list.tail = n
@@ -203,9 +203,9 @@ func (list *LinkedList) Shift() *node.Node {
 	if list.head == nil {
 		return nil
 	}
-	
+
 	pHead := list.head
-	
+
 	if list.head.Next() != nil {
 		list.head = list.head.Next()
 		list.head.WithPrev(nil)
@@ -213,7 +213,7 @@ func (list *LinkedList) Shift() *node.Node {
 		list.head = nil
 		list.tail = nil
 	}
-	
+
 	return list.cleanAndCopyNode(pHead)
 }
 
@@ -233,7 +233,7 @@ func (list *LinkedList) Head() (node.Node, bool) {
 	if list.head == nil {
 		return node.Node{}, false
 	}
-	
+
 	headCopy := *list.head
 	return headCopy, true
 }
@@ -246,7 +246,7 @@ func (list *LinkedList) Tail() (node.Node, bool) {
 	if list.tail == nil {
 		return node.Node{}, false
 	}
-	
+
 	tailCopy := *list.tail
 	return tailCopy, true
 }
@@ -260,10 +260,10 @@ func (list *LinkedList) cleanAndCopyNode(n *node.Node) *node.Node {
 			list.size--
 		}
 	}()
-	
+
 	n.WithNext(nil)
 	n.WithPrev(nil)
 	nCopy := *n
-	
+
 	return &nCopy
 }
