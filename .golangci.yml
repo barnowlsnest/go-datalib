@@ -101,7 +101,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/barnowlsnest/coredata-list
+        - github.com/barnowlsnest/go-datalib
   exclusions:
     generated: lax
     paths:
