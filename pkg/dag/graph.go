@@ -1,3 +1,5 @@
+// Package dag provides a directed acyclic graph (DAG) implementation with support
+// for grouped nodes, edge management, and cycle detection.
 package dag
 
 import (
@@ -9,6 +11,15 @@ import (
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
+// Graph represents a directed graph with support for node grouping and acyclic verification.
+// It provides efficient operations for adding/removing nodes and edges, querying relationships,
+// and detecting cycles using Kahn's algorithm.
+//
+// Key features:
+//   - Group-based node organization
+//   - Bidirectional edge tracking (adjacency and back-references)
+//   - Efficient cycle detection via topological sort
+//   - Thread-unsafe: external synchronization required for concurrent access
 type Graph struct {
 	// name is the name of the graph.
 	name string
@@ -29,6 +40,7 @@ type Graph struct {
 	adjacency map[NodeID]map[NodeID]EdgeID
 }
 
+// New creates and returns a new empty Graph instance with initialized internal maps.
 func New() *Graph {
 	return &Graph{
 		groups:    make(map[GroupName]map[NodeID]struct{}),
@@ -37,14 +49,19 @@ func New() *Graph {
 	}
 }
 
+// Name returns the graph's name.
 func (g *Graph) Name() string {
 	return g.name
 }
 
+// ID returns the graph's unique identifier.
 func (g *Graph) ID() ID {
 	return g.id
 }
 
+// checkNodeExists verifies that a node exists in the specified group.
+// Returns ErrGroupNotFound if the group doesn't exist, or ErrNodeNotFound if the node
+// doesn't exist in the group.
 func (g *Graph) checkNodeExists(n GroupNode) error {
 	groupNodes, groupExists := g.groups[n.Group]
 	if !groupExists {
@@ -57,6 +74,9 @@ func (g *Graph) checkNodeExists(n GroupNode) error {
 	return nil
 }
 
+// forEachEdge iterates over all outgoing edges from the specified node, invoking the
+// provided callback function for each edge. Panics in the callback are recovered and
+// passed to the callback as errors joined with ErrRecoverFromPanic.
 func (g *Graph) forEachEdge(from NodeID, fn OnAdjacencyEdgeFn) {
 	for to, edge := range g.adjacency[from] {
 		func() {
@@ -81,6 +101,8 @@ func (g *Graph) forEachEdge(from NodeID, fn OnAdjacencyEdgeFn) {
 	}
 }
 
+// removeAdjacency removes the edge from 'from' to 'to' and cleans up empty maps.
+// This is a low-level helper that doesn't validate node existence.
 func (g *Graph) removeAdjacency(from, to NodeID) {
 	delete(g.adjacency[from], to)
 	if len(g.adjacency[from]) == 0 {
@@ -92,6 +114,8 @@ func (g *Graph) removeAdjacency(from, to NodeID) {
 	}
 }
 
+// AddGroup creates a new group with the specified name.
+// Returns ErrGroupAlreadyExists if a group with the same name already exists.
 func (g *Graph) AddGroup(name GroupName) error {
 	_, groupExists := g.groups[name]
 	if groupExists {
@@ -101,6 +125,9 @@ func (g *Graph) AddGroup(name GroupName) error {
 	return nil
 }
 
+// AddNode adds a node to the specified group.
+// Returns ErrGroupNotFound if the group doesn't exist.
+// The node can be added multiple times without error (idempotent).
 func (g *Graph) AddNode(n GroupNode) error {
 	_, groupExists := g.groups[n.Group]
 	if !groupExists {
@@ -110,6 +137,9 @@ func (g *Graph) AddNode(n GroupNode) error {
 	return nil
 }
 
+// RemoveNode removes a node from its group and deletes all edges connected to it
+// (both incoming and outgoing).
+// Returns an error if the node doesn't exist.
 func (g *Graph) RemoveNode(gn GroupNode) error {
 	if nodeErr := g.checkNodeExists(gn); nodeErr != nil {
 		return errors.Join(ErrInvalidEdge, nodeErr)
@@ -121,6 +151,10 @@ func (g *Graph) RemoveNode(gn GroupNode) error {
 	return nil
 }
 
+// AddEdge creates a directed edge from 'from' to 'to'.
+// The edge ID is computed as NSum(from.ID, to.ID).
+// Returns ErrInvalidEdge if either node doesn't exist.
+// Adding the same edge multiple times is idempotent.
 func (g *Graph) AddEdge(from, to GroupNode) error {
 	if fromErr := g.checkNodeExists(from); fromErr != nil {
 		return errors.Join(ErrInvalidEdge, fromErr)
@@ -139,6 +173,9 @@ func (g *Graph) AddEdge(from, to GroupNode) error {
 	return nil
 }
 
+// RemoveEdge deletes the directed edge from 'from' to 'to'.
+// Returns ErrInvalidEdge if either node doesn't exist.
+// Removing a non-existent edge is a no-op (idempotent).
 func (g *Graph) RemoveEdge(from, to GroupNode) error {
 	if fromErr := g.checkNodeExists(from); fromErr != nil {
 		return errors.Join(ErrInvalidEdge, fromErr)
@@ -150,6 +187,7 @@ func (g *Graph) RemoveEdge(from, to GroupNode) error {
 	return nil
 }
 
+// HasNode returns true if the node exists in the specified group.
 func (g *Graph) HasNode(gn GroupNode) bool {
 	if err := g.checkNodeExists(gn); err != nil {
 		return false
@@ -157,6 +195,7 @@ func (g *Graph) HasNode(gn GroupNode) bool {
 	return true
 }
 
+// HasEdge returns true if a directed edge exists from 'from' to 'to'.
 func (g *Graph) HasEdge(from, to GroupNode) bool {
 	if fromErr := g.checkNodeExists(from); fromErr != nil {
 		return false
@@ -174,6 +213,18 @@ func (g *Graph) HasEdge(from, to GroupNode) bool {
 	return true
 }
 
+// IsAcyclic performs cycle detection using Kahn's algorithm (topological sort).
+// It returns a channel that will receive true if the graph is acyclic, false otherwise.
+// The check runs asynchronously in a goroutine. An empty graph is considered acyclic.
+//
+// Algorithm: Kahn's topological sort
+//   - Compute in-degree for all nodes
+//   - Process nodes with zero in-degree
+//   - If all nodes are processed, graph is acyclic
+//   - If some nodes remain, a cycle exists
+//
+// Time complexity: O(V + E) where V is nodes and E is edges
+// Space complexity: O(V)
 func (g *Graph) IsAcyclic() <-chan bool {
 	ch := make(chan bool)
 
@@ -254,6 +305,12 @@ func (g *Graph) IsAcyclic() <-chan bool {
 	return ch
 }
 
+// ForEachNeighbour iterates over all outgoing edges from the specified node,
+// invoking the callback function for each neighbor.
+// Returns ErrInvalidAdjacency if the node doesn't exist.
+//
+// The callback receives AdjacencyEdge with From, To, and Edge ID.
+// Panics in the callback are recovered and passed as errors.
 func (g *Graph) ForEachNeighbour(gn GroupNode, fn OnAdjacencyEdgeFn) error {
 	if nodeErr := g.checkNodeExists(gn); nodeErr != nil {
 		return errors.Join(ErrInvalidAdjacency, nodeErr)
@@ -262,6 +319,10 @@ func (g *Graph) ForEachNeighbour(gn GroupNode, fn OnAdjacencyEdgeFn) error {
 	return nil
 }
 
+// GetBackRefsOf returns all nodes that have edges pointing to the specified node.
+// Returns ErrInvalidBackRef if the node doesn't exist or has no incoming edges.
+//
+// Note: The returned slice order is non-deterministic due to map iteration.
 func (g *Graph) GetBackRefsOf(gn GroupNode) ([]GroupNode, error) {
 	if nodeErr := g.checkNodeExists(gn); nodeErr != nil {
 		return nil, errors.Join(ErrInvalidBackRef, nodeErr)
@@ -283,6 +344,10 @@ func (g *Graph) GetBackRefsOf(gn GroupNode) ([]GroupNode, error) {
 	return res, nil
 }
 
+// GetNodes returns all nodes belonging to the specified group.
+// Returns ErrGroupNotFound if the group doesn't exist.
+//
+// Note: The returned slice order is non-deterministic due to map iteration.
 func (g *Graph) GetNodes(group GroupName) ([]GroupNode, error) {
 	groupNodes, groupExists := g.groups[group]
 	if !groupExists {
@@ -297,6 +362,9 @@ func (g *Graph) GetNodes(group GroupName) ([]GroupNode, error) {
 	return res, nil
 }
 
+// ListGroups returns all group names in the graph.
+//
+// Note: The returned slice order is non-deterministic due to map iteration.
 func (g *Graph) ListGroups() []GroupName {
 	res := make([]GroupName, len(g.groups))
 	var i = 0
