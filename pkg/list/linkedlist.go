@@ -93,6 +93,25 @@ func (list *LinkedList) Push(n *node.Node) {
 	}
 }
 
+// PushID is a convenience method to add a new node with the given ID to the end of the list.
+//
+// This is equivalent to creating a node with node.New(id, nil, nil) and calling Push().
+// It simplifies the common case of adding nodes by ID without manually creating Node instances.
+//
+// Parameters:
+//   - id: The ID for the new node to add to the end of the list
+//
+// Example:
+//
+//	list := New()
+//	list.PushID(1)
+//	list.PushID(2)
+//	// List now contains nodes with IDs 1, 2
+func (list *LinkedList) PushID(id uint64) {
+	n := node.New(id, nil, nil)
+	list.Push(n)
+}
+
 // Pop removes and returns the last node (tail) from the list.
 //
 // This operation is O(1) and decreases the list size by 1. The returned
@@ -137,6 +156,31 @@ func (list *LinkedList) Pop() *node.Node {
 	return list.cleanAndCopyNode(pTail)
 }
 
+// PopID removes the last node from the list and returns its ID.
+//
+// This is a convenience method that combines Pop() with ID extraction.
+// It's useful when you only need the ID value and don't need the full Node.
+//
+// Returns:
+//   - The ID of the removed node, or 0 and node.ErrNil if the list is empty
+//
+// Example:
+//
+//	list := New()
+//	list.PushID(42)
+//	id, err := list.PopID()
+//	if err == nil {
+//	    fmt.Printf("Popped ID: %d\n", id) // Output: Popped ID: 42
+//	}
+func (list *LinkedList) PopID() (uint64, error) {
+	n := list.Pop()
+	if n == nil {
+		return 0, node.ErrNil
+	}
+
+	return n.ID(), nil
+}
+
 // Unshift adds a node to the beginning (head) of the list.
 //
 // This operation is O(1) and increases the list size by 1. The node's
@@ -170,6 +214,25 @@ func (list *LinkedList) Unshift(n *node.Node) {
 		list.head.WithPrev(n)
 		list.head = n
 	}
+}
+
+// UnshiftID is a convenience method to add a new node with the given ID to the beginning of the list.
+//
+// This is equivalent to creating a node with node.New(id, nil, nil) and calling Unshift().
+// It simplifies the common case of adding nodes by ID without manually creating Node instances.
+//
+// Parameters:
+//   - id: The ID for the new node to add to the beginning of the list
+//
+// Example:
+//
+//	list := New()
+//	list.UnshiftID(1)
+//	list.UnshiftID(2)
+//	// List now contains nodes with IDs 2, 1 (reverse order)
+func (list *LinkedList) UnshiftID(id uint64) {
+	n := node.New(id, nil, nil)
+	list.Unshift(n)
 }
 
 // Shift removes and returns the first node (head) from the list.
@@ -217,6 +280,31 @@ func (list *LinkedList) Shift() *node.Node {
 	return list.cleanAndCopyNode(pHead)
 }
 
+// ShiftID removes the first node from the list and returns its ID.
+//
+// This is a convenience method that combines Shift() with ID extraction.
+// It's useful when you only need the ID value and don't need the full Node.
+//
+// Returns:
+//   - The ID of the removed node, or 0 and node.ErrNil if the list is empty
+//
+// Example:
+//
+//	list := New()
+//	list.PushID(42)
+//	id, err := list.ShiftID()
+//	if err == nil {
+//	    fmt.Printf("Shifted ID: %d\n", id) // Output: Shifted ID: 42
+//	}
+func (list *LinkedList) ShiftID() (uint64, error) {
+	n := list.Shift()
+	if n == nil {
+		return 0, node.ErrNil
+	}
+
+	return n.ID(), nil
+}
+
 // Size returns the current number of nodes in the list.
 //
 // Returns:
@@ -238,6 +326,31 @@ func (list *LinkedList) Head() (node.Node, bool) {
 	return headCopy, true
 }
 
+// HeadID returns the ID of the first node in the list.
+//
+// This is a convenience method that combines Head() with ID extraction.
+// It's useful when you only need the head node's ID value.
+//
+// Returns:
+//   - The ID of the head node, or 0 and node.ErrNil if the list is empty
+//
+// Example:
+//
+//	list := New()
+//	list.PushID(42)
+//	id, err := list.HeadID()
+//	if err == nil {
+//	    fmt.Printf("Head ID: %d\n", id) // Output: Head ID: 42
+//	}
+func (list *LinkedList) HeadID() (uint64, error) {
+	h, ok := list.Head()
+	if !ok {
+		return 0, node.ErrNil
+	}
+
+	return h.ID(), nil
+}
+
 // Tail returns the last node in the list.
 //
 // Returns:
@@ -249,6 +362,31 @@ func (list *LinkedList) Tail() (node.Node, bool) {
 
 	tailCopy := *list.tail
 	return tailCopy, true
+}
+
+// TailID returns the ID of the last node in the list.
+//
+// This is a convenience method that combines Tail() with ID extraction.
+// It's useful when you only need the tail node's ID value.
+//
+// Returns:
+//   - The ID of the tail node, or 0 and node.ErrNil if the list is empty
+//
+// Example:
+//
+//	list := New()
+//	list.PushID(42)
+//	id, err := list.TailID()
+//	if err == nil {
+//	    fmt.Printf("Tail ID: %d\n", id) // Output: Tail ID: 42
+//	}
+func (list *LinkedList) TailID() (uint64, error) {
+	t, ok := list.Tail()
+	if !ok {
+		return 0, node.ErrNil
+	}
+
+	return t.ID(), nil
 }
 
 // cleanAndCopyNode cleans a node's references and returns a copy.
