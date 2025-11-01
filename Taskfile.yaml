@@ -4,6 +4,7 @@ version: '3'
 
 vars:
   ALL: ./...
+  COVERAGE_THRESHOLD: 80  # Minimum code coverage percentage required
 
 env:
   MODULE_PATH: github.com/barnowlsnest/go-datalib
@@ -29,6 +30,25 @@ tasks:
     cmds:
       - go test -cover '{{.ALL}}'
 
+  go-coverage:
+    desc: Check code coverage and ensure it meets minimum thresholds
+    cmds:
+      - |
+        echo "Checking code coverage (minimum threshold: {{.COVERAGE_THRESHOLD}}%)..."
+        go test -coverprofile=/tmp/coverage.out '{{.ALL}}'
+        go tool cover -func=/tmp/coverage.out | tail -1
+
+        # Extract total coverage percentage
+        TOTAL_COV=$(go tool cover -func=/tmp/coverage.out | grep total | awk '{print $3}' | sed 's/%//')
+
+        # Check if coverage meets minimum threshold
+        if [ $(echo "$TOTAL_COV < {{.COVERAGE_THRESHOLD}}" | bc) -eq 1 ]; then
+          echo "❌ Coverage check failed: ${TOTAL_COV}% is below minimum threshold of {{.COVERAGE_THRESHOLD}}%"
+          exit 1
+        fi
+
+        echo "✅ Coverage check passed: ${TOTAL_COV}% (threshold: {{.COVERAGE_THRESHOLD}}%)"
+
   go-bench:
     desc: Run benchmarks with memory stats
     cmds:
@@ -51,6 +71,7 @@ tasks:
       - task: go-vet
       - task: go-lint
       - task: go-test
+      - task: go-coverage
 
   build:
     deps:
