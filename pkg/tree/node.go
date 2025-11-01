@@ -55,10 +55,10 @@ func (n *Node[T]) withParent(parent *Node[T]) error {
 	if parent == nil {
 		return ErrParentNil
 	}
-
+	
 	n.pNode.WithPrev(parent.pNode)
 	n.level = parent.level + 1
-
+	
 	return nil
 }
 
@@ -66,9 +66,9 @@ func (n *Node[T]) PushHead(parent *Node[T]) error {
 	if err := n.withParent(parent); err != nil {
 		return err
 	}
-
+	
 	parent.children.Unshift(n.pNode)
-
+	
 	return nil
 }
 
@@ -76,12 +76,8 @@ func (n *Node[T]) PushTail(parent *Node[T]) error {
 	if err := n.withParent(parent); err != nil {
 		return err
 	}
-
+	
 	parent.children.Push(n.pNode)
-
-	return nil
-}
-
-func (n *Node[T]) ChildrenValues() []T {
+	
 	return nil
 }
