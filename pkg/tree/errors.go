@@ -5,5 +5,6 @@ import (
 )
 
 var (
-	ErrParentNil = errors.New("parent node is nil")
+	ErrNilParent     = errors.New("parent is nil")
+	ErrChildNotFound = errors.New("child not found")
 )

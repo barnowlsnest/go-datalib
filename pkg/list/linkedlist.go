@@ -1,6 +1,8 @@
 package list
 
 import (
+	"iter"
+
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
@@ -387,6 +389,14 @@ func (list *LinkedList) TailID() (uint64, error) {
 	}
 
 	return t.ID(), nil
+}
+
+func (list *LinkedList) IterNext() iter.Seq2[int, *node.Node] {
+	return node.NextNodes(list.head)
+}
+
+func (list *LinkedList) IterPrev() iter.Seq2[int, *node.Node] {
+	return node.PrevNodes(list.tail)
 }
 
 // cleanAndCopyNode cleans a node's references and returns a copy.

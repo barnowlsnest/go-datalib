@@ -4,18 +4,18 @@ import (
 	"iter"
 )
 
-func move(it Iterable) iter.Seq2[uint64, *Node] {
-	return func(yield func(uint64, *Node) bool) {
+func move(it Iterable) iter.Seq2[int, *Node] {
+	return func(yield func(int, *Node) bool) {
 		var (
 			ne  *Node
 			err error
 		)
-		b, err := it.Curr()
+
 		if err != nil {
 			return
 		}
 
-		i := b.ID()
+		var i int
 		for it.HasNext() {
 			ne, err = it.Next()
 			if err != nil {
@@ -24,6 +24,7 @@ func move(it Iterable) iter.Seq2[uint64, *Node] {
 			if !yield(i, ne) {
 				return
 			}
+			i += 1
 		}
 	}
 }
@@ -65,7 +66,7 @@ type Iterable interface {
 //	for id, node := range NextNodes(startNode) {
 //	    fmt.Printf("Node %d\n", id)
 //	}
-func NextNodes(n *Node) iter.Seq2[uint64, *Node] {
+func NextNodes(n *Node) iter.Seq2[int, *Node] {
 	return move(Forward(n))
 }
 
@@ -86,6 +87,6 @@ func NextNodes(n *Node) iter.Seq2[uint64, *Node] {
 //	for id, node := range PrevNodes(endNode) {
 //	    fmt.Printf("Node %d\n", id)
 //	}
-func PrevNodes(n *Node) iter.Seq2[uint64, *Node] {
+func PrevNodes(n *Node) iter.Seq2[int, *Node] {
 	return move(Backward(n))
 }

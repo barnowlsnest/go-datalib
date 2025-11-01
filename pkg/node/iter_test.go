@@ -12,7 +12,7 @@ type IterSeqTestSuite struct {
 }
 
 func (s *IterSeqTestSuite) TestNextNodes_NilNode() {
-	var collected []uint64
+	var collected []int
 
 	for id, node := range NextNodes(nil) {
 		collected = append(collected, id)
@@ -25,7 +25,7 @@ func (s *IterSeqTestSuite) TestNextNodes_NilNode() {
 
 func (s *IterSeqTestSuite) TestNextNodes_SingleNode() {
 	node := New(1, nil, nil)
-	var collected []uint64
+	var collected []int
 	var nodes []*Node
 
 	for id, n := range NextNodes(node) {
@@ -48,7 +48,7 @@ func (s *IterSeqTestSuite) TestNextNodes_LinearChain() {
 		nodeList[i].WithNext(nodeList[i+1])
 	}
 
-	var collected []uint64
+	var collected []int
 	var nodes []*Node
 
 	for id, node := range NextNodes(nodeList[0]) {
@@ -57,7 +57,7 @@ func (s *IterSeqTestSuite) TestNextNodes_LinearChain() {
 	}
 
 	// Should collect nodes 2, 3, 4, 5 (starting from node 1, iterating through Next)
-	s.Require().Equal([]uint64{1, 1, 1, 1}, collected) // All IDs should be 1 (the starting node's ID)
+	s.Require().Equal([]int{0, 1, 2, 3}, collected) // All IDs should be 1 (the starting node's ID)
 	s.Require().Len(nodes, 4)
 	s.Require().Equal(nodeList[1], nodes[0])
 	s.Require().Equal(nodeList[2], nodes[1])
@@ -75,7 +75,7 @@ func (s *IterSeqTestSuite) TestNextNodes_EarlyBreak() {
 		nodeList[i].WithNext(nodeList[i+1])
 	}
 
-	var collected []uint64
+	var collected []int
 	count := 0
 
 	for id, node := range NextNodes(nodeList[0]) {
@@ -92,7 +92,7 @@ func (s *IterSeqTestSuite) TestNextNodes_EarlyBreak() {
 }
 
 func (s *IterSeqTestSuite) TestPrevNodes_NilNode() {
-	var collected []uint64
+	var collected []int
 
 	for id, node := range PrevNodes(nil) {
 		collected = append(collected, id)
@@ -105,7 +105,7 @@ func (s *IterSeqTestSuite) TestPrevNodes_NilNode() {
 
 func (s *IterSeqTestSuite) TestPrevNodes_SingleNode() {
 	node := New(1, nil, nil)
-	var collected []uint64
+	var collected []int
 	var nodes []*Node
 
 	for id, n := range PrevNodes(node) {
@@ -128,7 +128,7 @@ func (s *IterSeqTestSuite) TestPrevNodes_LinearChain() {
 		nodeList[i].WithPrev(nodeList[i-1])
 	}
 
-	var collected []uint64
+	var collected []int
 	var nodes []*Node
 
 	for id, node := range PrevNodes(nodeList[4]) {
@@ -137,7 +137,7 @@ func (s *IterSeqTestSuite) TestPrevNodes_LinearChain() {
 	}
 
 	// Should collect nodes 4, 3, 2, 1 (starting from node 5, iterating backward through Prev)
-	s.Require().Equal([]uint64{5, 5, 5, 5}, collected) // All IDs should be 5 (the starting node's ID)
+	s.Require().Equal([]int{0, 1, 2, 3}, collected) // All IDs should be 5 (the starting node's ID)
 	s.Require().Len(nodes, 4)
 	s.Require().Equal(nodeList[3], nodes[0])
 	s.Require().Equal(nodeList[2], nodes[1])
@@ -155,7 +155,7 @@ func (s *IterSeqTestSuite) TestPrevNodes_EarlyBreak() {
 		nodeList[i].WithPrev(nodeList[i-1])
 	}
 
-	var collected []uint64
+	var collected []int
 	count := 0
 
 	for id, node := range PrevNodes(nodeList[4]) {

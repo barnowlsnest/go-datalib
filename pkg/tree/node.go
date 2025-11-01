@@ -1,32 +1,22 @@
 package tree
 
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/list"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
 type Node[T comparable] struct {
 	value    T
 	level    int
-	pNode    *node.Node
-	children *list.LinkedList
+	ptr      *node.Node
+	children *NodeChildren[T]
 }
 
-func WithChildren[T comparable](id uint64, value T, children *list.LinkedList) *Node[T] {
+func NewNode[T comparable](id uint64, value T, nodes *NodeChildren[T]) *Node[T] {
 	return &Node[T]{
 		value:    value,
 		level:    -1,
-		pNode:    node.New(id, nil, nil),
-		children: children,
-	}
-}
-
-func New[T comparable](id uint64, value T) *Node[T] {
-	return &Node[T]{
-		value:    value,
-		level:    -1,
-		pNode:    node.New(id, nil, nil),
-		children: list.New(),
+		ptr:      node.ID(id),
+		children: nodes,
 	}
 }
 
@@ -39,45 +29,31 @@ func (n *Node[T]) Level() int {
 }
 
 func (n *Node[T]) ID() uint64 {
-	return n.pNode.ID()
+	return n.ptr.ID()
 }
 
 func (n *Node[T]) IsRoot() bool {
-	return n.level == 0 && n.pNode.Prev() == nil
+	return n.level == 0 && n.ptr.Prev() == nil
 }
 
 func (n *Node[T]) BeholdRoot() {
-	n.pNode.WithPrev(nil)
+	n.ptr.WithPrev(nil)
 	n.level = 0
 }
 
-func (n *Node[T]) withParent(parent *Node[T]) error {
+func (n *Node[T]) WithParent(parent *Node[T]) {
 	if parent == nil {
-		return ErrParentNil
+		return
 	}
 
-	n.pNode.WithPrev(parent.pNode)
+	n.ptr.WithPrev(parent.ptr)
 	n.level = parent.level + 1
-
-	return nil
 }
 
-func (n *Node[T]) PushHead(parent *Node[T]) error {
-	if err := n.withParent(parent); err != nil {
-		return err
-	}
-
-	parent.children.Unshift(n.pNode)
-
-	return nil
+func (n *Node[T]) Ptr() *node.Node {
+	return n.ptr
 }
 
-func (n *Node[T]) PushTail(parent *Node[T]) error {
-	if err := n.withParent(parent); err != nil {
-		return err
-	}
-
-	parent.children.Push(n.pNode)
-
-	return nil
+func (n *Node[T]) Children() *NodeChildren[T] {
+	return n.children
 }
