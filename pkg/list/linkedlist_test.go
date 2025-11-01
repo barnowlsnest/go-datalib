@@ -197,3 +197,205 @@ func TestCombinedOperations(t *testing.T) {
 		assert.Equal(t, node1, list.tail)
 	})
 }
+
+func TestPushID(t *testing.T) {
+	t.Run("should push node by ID to empty list", func(t *testing.T) {
+		list := New()
+
+		list.PushID(42)
+
+		assert.Equal(t, 1, list.size)
+		id, err := list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(42), id)
+	})
+
+	t.Run("should push multiple nodes by ID", func(t *testing.T) {
+		list := New()
+
+		list.PushID(1)
+		list.PushID(2)
+		list.PushID(3)
+
+		assert.Equal(t, 3, list.size)
+
+		headID, err := list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), headID)
+
+		tailID, err := list.TailID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(3), tailID)
+	})
+}
+
+func TestPopID(t *testing.T) {
+	t.Run("should return error when popping from empty list", func(t *testing.T) {
+		list := New()
+
+		id, err := list.PopID()
+
+		assert.Error(t, err)
+		assert.Equal(t, node.ErrNil, err)
+		assert.Equal(t, uint64(0), id)
+	})
+
+	t.Run("should pop ID from list", func(t *testing.T) {
+		list := New()
+		list.PushID(1)
+		list.PushID(2)
+		list.PushID(3)
+
+		id, err := list.PopID()
+
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(3), id)
+		assert.Equal(t, 2, list.size)
+	})
+}
+
+func TestUnshiftID(t *testing.T) {
+	t.Run("should unshift node by ID to empty list", func(t *testing.T) {
+		list := New()
+
+		list.UnshiftID(42)
+
+		assert.Equal(t, 1, list.size)
+		id, err := list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(42), id)
+	})
+
+	t.Run("should unshift multiple nodes by ID", func(t *testing.T) {
+		list := New()
+
+		list.UnshiftID(1)
+		list.UnshiftID(2)
+		list.UnshiftID(3)
+
+		assert.Equal(t, 3, list.size)
+
+		headID, err := list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(3), headID)
+
+		tailID, err := list.TailID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), tailID)
+	})
+}
+
+func TestShiftID(t *testing.T) {
+	t.Run("should return error when shifting from empty list", func(t *testing.T) {
+		list := New()
+
+		id, err := list.ShiftID()
+
+		assert.Error(t, err)
+		assert.Equal(t, node.ErrNil, err)
+		assert.Equal(t, uint64(0), id)
+	})
+
+	t.Run("should shift ID from list", func(t *testing.T) {
+		list := New()
+		list.PushID(1)
+		list.PushID(2)
+		list.PushID(3)
+
+		id, err := list.ShiftID()
+
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), id)
+		assert.Equal(t, 2, list.size)
+	})
+}
+
+func TestHeadID(t *testing.T) {
+	t.Run("should return error for empty list", func(t *testing.T) {
+		list := New()
+
+		id, err := list.HeadID()
+
+		assert.Error(t, err)
+		assert.Equal(t, node.ErrNil, err)
+		assert.Equal(t, uint64(0), id)
+	})
+
+	t.Run("should return head ID", func(t *testing.T) {
+		list := New()
+		list.PushID(1)
+		list.PushID(2)
+
+		id, err := list.HeadID()
+
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), id)
+	})
+}
+
+func TestTailID(t *testing.T) {
+	t.Run("should return error for empty list", func(t *testing.T) {
+		list := New()
+
+		id, err := list.TailID()
+
+		assert.Error(t, err)
+		assert.Equal(t, node.ErrNil, err)
+		assert.Equal(t, uint64(0), id)
+	})
+
+	t.Run("should return tail ID", func(t *testing.T) {
+		list := New()
+		list.PushID(1)
+		list.PushID(2)
+
+		id, err := list.TailID()
+
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(2), id)
+	})
+}
+
+func TestIDBasedWorkflow(t *testing.T) {
+	t.Run("should work with ID-based methods exclusively", func(t *testing.T) {
+		list := New()
+
+		// Add items using PushID and UnshiftID
+		list.PushID(2)
+		list.PushID(3)
+		list.UnshiftID(1)
+		list.PushID(4)
+
+		// Verify size
+		assert.Equal(t, 4, list.Size())
+
+		// Verify head and tail
+		headID, err := list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), headID)
+
+		tailID, err := list.TailID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(4), tailID)
+
+		// Remove from both ends
+		shiftedID, err := list.ShiftID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(1), shiftedID)
+
+		poppedID, err := list.PopID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(4), poppedID)
+
+		assert.Equal(t, 2, list.Size())
+
+		// Verify remaining elements
+		headID, err = list.HeadID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(2), headID)
+
+		tailID, err = list.TailID()
+		assert.NoError(t, err)
+		assert.Equal(t, uint64(3), tailID)
+	})
+}

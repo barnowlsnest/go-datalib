@@ -58,6 +58,26 @@ func New(id uint64, next, prev *Node) *Node {
 	}
 }
 
+// ID creates a new standalone Node with the specified ID and no connections.
+//
+// This is a convenience function equivalent to calling New(id, nil, nil).
+// It's useful when you need to create isolated nodes that will be linked
+// later using WithNext() and WithPrev() methods.
+//
+// Parameters:
+//   - id: The unique identifier for the new node
+//
+// Returns:
+//   - A new Node with no next or previous connections
+//
+// Example:
+//
+//	node := ID(42)
+//	// Equivalent to: node := New(42, nil, nil)
+func ID(id uint64) *Node {
+	return New(id, nil, nil)
+}
+
 // ID returns the unique identifier of this node.
 //
 // The ID is immutable after node creation and serves as the primary
