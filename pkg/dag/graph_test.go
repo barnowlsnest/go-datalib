@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -18,23 +17,23 @@ type BasicFunctionalityTestSuite struct {
 func (s *BasicFunctionalityTestSuite) TestNewAdjacencyGroups() {
 	ag := New()
 
-	assert.NotNil(s.T(), ag)
-	assert.NotNil(s.T(), ag.groups)
-	assert.NotNil(s.T(), ag.backRefs)
-	assert.NotNil(s.T(), ag.adjacency)
-	assert.Equal(s.T(), 0, len(ag.groups))
+	s.Require().NotNil(ag)
+	s.Require().NotNil(ag.groups)
+	s.Require().NotNil(ag.backRefs)
+	s.Require().NotNil(ag.adjacency)
+	s.Require().Equal(0, len(ag.groups))
 }
 
 func (s *BasicFunctionalityTestSuite) TestAddGroup() {
 	ag := New()
 
 	err := ag.AddGroup("users")
-	assert.NoError(s.T(), err)
+	s.Require().NoError(err)
 
 	// Adding same group should return error
 	err = ag.AddGroup("users")
-	assert.Error(s.T(), err)
-	assert.ErrorIs(s.T(), err, ErrGroupAlreadyExists)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrGroupAlreadyExists)
 }
 
 func (s *BasicFunctionalityTestSuite) TestAddNode() {
@@ -43,13 +42,13 @@ func (s *BasicFunctionalityTestSuite) TestAddNode() {
 
 	node := GroupNode{ID: 1, Group: "users"}
 	err := ag.AddNode(node)
-	assert.NoError(s.T(), err)
+	s.Require().NoError(err)
 
 	// Adding to non-existent group should fail
 	invalidNode := GroupNode{ID: 2, Group: "nonexistent"}
 	err = ag.AddNode(invalidNode)
-	assert.Error(s.T(), err)
-	assert.ErrorIs(s.T(), err, ErrGroupNotFound)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrGroupNotFound)
 }
 
 func (s *BasicFunctionalityTestSuite) TestAddNode_Idempotent() {
@@ -60,8 +59,8 @@ func (s *BasicFunctionalityTestSuite) TestAddNode_Idempotent() {
 	err1 := ag.AddNode(node)
 	err2 := ag.AddNode(node)
 
-	assert.NoError(s.T(), err1)
-	assert.NoError(s.T(), err2)
+	s.Require().NoError(err1)
+	s.Require().NoError(err2)
 }
 
 func (s *BasicFunctionalityTestSuite) TestHasNode() {
@@ -69,10 +68,10 @@ func (s *BasicFunctionalityTestSuite) TestHasNode() {
 	_ = ag.AddGroup("users")
 
 	node := GroupNode{ID: 1, Group: "users"}
-	assert.False(s.T(), ag.HasNode(node))
+	s.Require().False(ag.HasNode(node))
 
 	_ = ag.AddNode(node)
-	assert.True(s.T(), ag.HasNode(node))
+	s.Require().True(ag.HasNode(node))
 }
 
 func (s *BasicFunctionalityTestSuite) TestAddEdge() {
@@ -85,8 +84,8 @@ func (s *BasicFunctionalityTestSuite) TestAddEdge() {
 	_ = ag.AddNode(to)
 
 	err := ag.AddEdge(from, to)
-	assert.NoError(s.T(), err)
-	assert.True(s.T(), ag.HasEdge(from, to))
+	s.Require().NoError(err)
+	s.Require().True(ag.HasEdge(from, to))
 }
 
 func (s *BasicFunctionalityTestSuite) TestAddEdge_NonExistentNode() {
@@ -98,8 +97,8 @@ func (s *BasicFunctionalityTestSuite) TestAddEdge_NonExistentNode() {
 	_ = ag.AddNode(from)
 
 	err := ag.AddEdge(from, to)
-	assert.Error(s.T(), err)
-	assert.ErrorIs(s.T(), err, ErrInvalidEdge)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrInvalidEdge)
 }
 
 func (s *BasicFunctionalityTestSuite) TestRemoveEdge() {
@@ -112,11 +111,11 @@ func (s *BasicFunctionalityTestSuite) TestRemoveEdge() {
 	_ = ag.AddNode(to)
 	_ = ag.AddEdge(from, to)
 
-	assert.True(s.T(), ag.HasEdge(from, to))
+	s.Require().True(ag.HasEdge(from, to))
 
 	err := ag.RemoveEdge(from, to)
-	assert.NoError(s.T(), err)
-	assert.False(s.T(), ag.HasEdge(from, to))
+	s.Require().NoError(err)
+	s.Require().False(ag.HasEdge(from, to))
 }
 
 func (s *BasicFunctionalityTestSuite) TestRemoveNode() {
@@ -135,10 +134,10 @@ func (s *BasicFunctionalityTestSuite) TestRemoveNode() {
 	_ = ag.AddEdge(node3, node1)
 
 	err := ag.RemoveNode(node2)
-	assert.NoError(s.T(), err)
-	assert.False(s.T(), ag.HasNode(node2))
-	assert.False(s.T(), ag.HasEdge(node1, node2))
-	assert.False(s.T(), ag.HasEdge(node2, node3))
+	s.Require().NoError(err)
+	s.Require().False(ag.HasNode(node2))
+	s.Require().False(ag.HasEdge(node1, node2))
+	s.Require().False(ag.HasEdge(node2, node3))
 }
 
 // MemoryConsistencyTestSuite tests memory cleanup and consistency
@@ -156,14 +155,14 @@ func (s *MemoryConsistencyTestSuite) TestRemoveEdge_CleansUpEmptyMaps() {
 	_ = ag.AddNode(to)
 
 	_ = ag.AddEdge(from, to)
-	assert.Equal(s.T(), 1, len(ag.adjacency))
-	assert.Equal(s.T(), 1, len(ag.backRefs))
+	s.Require().Equal(1, len(ag.adjacency))
+	s.Require().Equal(1, len(ag.backRefs))
 
 	_ = ag.RemoveEdge(from, to)
 
 	// Empty maps should be cleaned up
-	assert.Equal(s.T(), 0, len(ag.adjacency))
-	assert.Equal(s.T(), 0, len(ag.backRefs))
+	s.Require().Equal(0, len(ag.adjacency))
+	s.Require().Equal(0, len(ag.backRefs))
 }
 
 func (s *MemoryConsistencyTestSuite) TestRemoveNode_CleansUpAllReferences() {
@@ -184,16 +183,16 @@ func (s *MemoryConsistencyTestSuite) TestRemoveNode_CleansUpAllReferences() {
 	_ = ag.RemoveNode(node2)
 
 	// Verify node2 is removed from the group
-	assert.False(s.T(), ag.HasNode(node2), "node2 should be removed from group")
+	s.Require().False(ag.HasNode(node2), "node2 should be removed from group")
 
 	// Verify all outgoing edges from node2 are cleaned up
 	_, hasAdjacency := ag.adjacency[node2.ID]
-	assert.False(s.T(), hasAdjacency, "node2 should not have adjacency entries")
+	s.Require().False(hasAdjacency, "node2 should not have adjacency entries")
 
 	// Verify edge from node2 to node3 is cleaned up in node3's backRefs
 	if backRefs, exists := ag.backRefs[node3.ID]; exists {
 		_, hasNode2Ref := backRefs[node2.ID]
-		assert.False(s.T(), hasNode2Ref, "node3 should not have backRef from node2")
+		s.Require().False(hasNode2Ref, "node3 should not have backRef from node2")
 	}
 }
 
@@ -210,9 +209,9 @@ func (s *MemoryConsistencyTestSuite) TestBackRefsConsistency() {
 
 	// BackRefs should be consistent with adjacency
 	backRefs, exists := ag.backRefs[node2.ID]
-	assert.True(s.T(), exists)
+	s.Require().True(exists)
 	_, hasRef := backRefs[node1.ID]
-	assert.True(s.T(), hasRef)
+	s.Require().True(hasRef)
 }
 
 func (s *MemoryConsistencyTestSuite) TestMultipleEdgeAdditions_Consistency() {
@@ -231,10 +230,10 @@ func (s *MemoryConsistencyTestSuite) TestMultipleEdgeAdditions_Consistency() {
 
 	// Should only have one edge
 	edges := ag.adjacency[from.ID]
-	assert.Equal(s.T(), 1, len(edges))
+	s.Require().Equal(1, len(edges))
 
 	backRefs := ag.backRefs[to.ID]
-	assert.Equal(s.T(), 1, len(backRefs))
+	s.Require().Equal(1, len(backRefs))
 }
 
 // IsAcyclicCorrectnessTestSuite tests cycle detection correctness
@@ -246,7 +245,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_EmptyGraph() {
 	ag := New()
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "empty graph should be acyclic")
+	s.Require().True(result, "empty graph should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SingleNode() {
@@ -257,7 +256,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SingleNode() {
 	_ = ag.AddNode(node)
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "single node with no edges should be acyclic")
+	s.Require().True(result, "single node with no edges should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_TwoNodesNoEdges() {
@@ -270,7 +269,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_TwoNodesNoEdges() {
 	_ = ag.AddNode(node2)
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "nodes without edges should be acyclic")
+	s.Require().True(result, "nodes without edges should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SimpleChain() {
@@ -288,7 +287,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SimpleChain() {
 	_ = ag.AddEdge(node2, node3)
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "simple chain should be acyclic")
+	s.Require().True(result, "simple chain should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SimpleCycle() {
@@ -308,7 +307,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SimpleCycle() {
 	_ = ag.AddEdge(node3, node1)
 
 	result := <-ag.IsAcyclic()
-	assert.False(s.T(), result, "cycle should be detected")
+	s.Require().False(result, "cycle should be detected")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SelfLoop() {
@@ -320,7 +319,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_SelfLoop() {
 	_ = ag.AddEdge(node, node)
 
 	result := <-ag.IsAcyclic()
-	assert.False(s.T(), result, "self-loop should be detected as cycle")
+	s.Require().False(result, "self-loop should be detected as cycle")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DAGWithMultiplePaths() {
@@ -343,7 +342,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DAGWithMultiplePaths() {
 	_ = ag.AddEdge(node3, node4)
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "DAG with multiple paths should be acyclic")
+	s.Require().True(result, "DAG with multiple paths should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_ComplexCycle() {
@@ -364,7 +363,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_ComplexCycle() {
 	_ = ag.AddEdge(nodes[9], nodes[5])
 
 	result := <-ag.IsAcyclic()
-	assert.False(s.T(), result, "complex cycle should be detected")
+	s.Require().False(result, "complex cycle should be detected")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DisconnectedComponents() {
@@ -392,7 +391,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DisconnectedComponents() {
 	_ = ag.AddEdge(node5, node6)
 
 	result := <-ag.IsAcyclic()
-	assert.True(s.T(), result, "disconnected acyclic components should be acyclic")
+	s.Require().True(result, "disconnected acyclic components should be acyclic")
 }
 
 func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DisconnectedWithCycle() {
@@ -421,7 +420,7 @@ func (s *IsAcyclicCorrectnessTestSuite) TestIsAcyclic_DisconnectedWithCycle() {
 	_ = ag.AddEdge(node6, node4)
 
 	result := <-ag.IsAcyclic()
-	assert.False(s.T(), result, "cycle in one component should be detected")
+	s.Require().False(result, "cycle in one component should be detected")
 }
 
 // IsAcyclicPerformanceTestSuite tests performance of cycle detection
@@ -451,9 +450,9 @@ func (s *IsAcyclicPerformanceTestSuite) TestIsAcyclic_LargeAcyclicGraph() {
 	result := <-ag.IsAcyclic()
 	duration := time.Since(start)
 
-	assert.True(s.T(), result)
+	s.Require().True(result)
 	// Should complete quickly (< 100ms for 1000 nodes)
-	assert.Less(s.T(), duration, 100*time.Millisecond,
+	s.Require().Less(duration, 100*time.Millisecond,
 		"IsAcyclic should complete quickly for 1000-node chain")
 }
 
@@ -481,8 +480,8 @@ func (s *IsAcyclicPerformanceTestSuite) TestIsAcyclic_ComplexDAG() {
 	result := <-ag.IsAcyclic()
 	duration := time.Since(start)
 
-	assert.True(s.T(), result)
-	assert.Less(s.T(), duration, 50*time.Millisecond,
+	s.Require().True(result)
+	s.Require().Less(duration, 50*time.Millisecond,
 		"IsAcyclic should complete quickly for complex DAG")
 }
 
@@ -510,8 +509,8 @@ func (s *BackRefsTestSuite) TestGetBackRefsOf() {
 	_ = ag.AddEdge(node3, node4)
 
 	backRefs, err := ag.GetBackRefsOf(node4)
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 3, len(backRefs))
+	s.Require().NoError(err)
+	s.Require().Equal(3, len(backRefs))
 }
 
 func (s *BackRefsTestSuite) TestGetBackRefsOf_NoBackRefs() {
@@ -522,9 +521,9 @@ func (s *BackRefsTestSuite) TestGetBackRefsOf_NoBackRefs() {
 	_ = ag.AddNode(node)
 
 	backRefs, err := ag.GetBackRefsOf(node)
-	assert.Error(s.T(), err)
-	assert.ErrorIs(s.T(), err, ErrInvalidBackRef)
-	assert.Nil(s.T(), backRefs)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrInvalidBackRef)
+	s.Require().Nil(backRefs)
 }
 
 // ForEachNeighbourTestSuite tests neighbor iteration
@@ -548,12 +547,12 @@ func (s *ForEachNeighbourTestSuite) TestForEachNeighbour() {
 
 	visited := make([]NodeID, 0)
 	err := ag.ForEachNeighbour(node1, func(edge AdjacencyEdge, err error) {
-		assert.NoError(s.T(), err)
+		s.Require().NoError(err)
 		visited = append(visited, edge.To)
 	})
 
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, len(visited))
+	s.Require().NoError(err)
+	s.Require().Equal(2, len(visited))
 }
 
 func (s *ForEachNeighbourTestSuite) TestForEachNeighbour_PanicRecovery() {
@@ -575,9 +574,9 @@ func (s *ForEachNeighbourTestSuite) TestForEachNeighbour_PanicRecovery() {
 		panic("intentional panic")
 	})
 
-	assert.NoError(s.T(), err)
-	assert.NotNil(s.T(), recoveredError)
-	assert.ErrorIs(s.T(), recoveredError, ErrRecoverFromPanic)
+	s.Require().NoError(err)
+	s.Require().NotNil(recoveredError)
+	s.Require().ErrorIs(recoveredError, ErrRecoverFromPanic)
 }
 
 // GroupOperationsTestSuite tests group-related operations
@@ -589,13 +588,13 @@ func (s *GroupOperationsTestSuite) TestListGroups() {
 	ag := New()
 
 	groups := ag.ListGroups()
-	assert.Equal(s.T(), 0, len(groups))
+	s.Require().Equal(0, len(groups))
 
 	_ = ag.AddGroup("users")
 	_ = ag.AddGroup("products")
 
 	groups = ag.ListGroups()
-	assert.Equal(s.T(), 2, len(groups))
+	s.Require().Equal(2, len(groups))
 }
 
 func (s *GroupOperationsTestSuite) TestGetNodes() {
@@ -608,17 +607,17 @@ func (s *GroupOperationsTestSuite) TestGetNodes() {
 	_ = ag.AddNode(node2)
 
 	nodes, err := ag.GetNodes("test")
-	assert.NoError(s.T(), err)
-	assert.Equal(s.T(), 2, len(nodes))
+	s.Require().NoError(err)
+	s.Require().Equal(2, len(nodes))
 }
 
 func (s *GroupOperationsTestSuite) TestGetNodes_NonExistentGroup() {
 	ag := New()
 
 	nodes, err := ag.GetNodes("nonexistent")
-	assert.Error(s.T(), err)
-	assert.ErrorIs(s.T(), err, ErrGroupNotFound)
-	assert.Nil(s.T(), nodes)
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrGroupNotFound)
+	s.Require().Nil(nodes)
 }
 
 // ConcurrencyTestSuite tests concurrent operations
@@ -657,7 +656,7 @@ func (s *ConcurrencyTestSuite) TestConcurrentIsAcyclic() {
 
 	// All should return true
 	for i, result := range results {
-		assert.True(s.T(), result, "result %d should be true", i)
+		s.Require().True(result, "result %d should be true", i)
 	}
 }
 
