@@ -33,9 +33,11 @@ func (s *IterSeqTestSuite) TestNextNodes_SingleNode() {
 		nodes = append(nodes, n)
 	}
 
-	// Single node has no next, so iteration should not yield any elements
-	s.Require().Empty(collected)
-	s.Require().Empty(nodes)
+	// Single node should yield itself (this was the bug - it was being skipped)
+	s.Require().Equal([]int{0}, collected, "Should yield index 0")
+	s.Require().Len(nodes, 1, "Should yield exactly one node")
+	s.Require().Equal(node, nodes[0], "Should yield the starting node")
+	s.Require().Equal(uint64(1), nodes[0].ID(), "Node should have correct ID")
 }
 
 func (s *IterSeqTestSuite) TestNextNodes_LinearChain() {
@@ -56,13 +58,14 @@ func (s *IterSeqTestSuite) TestNextNodes_LinearChain() {
 		nodes = append(nodes, node)
 	}
 
-	// Should collect nodes 2, 3, 4, 5 (starting from node 1, iterating through Next)
-	s.Require().Equal([]int{0, 1, 2, 3}, collected) // All IDs should be 1 (the starting node's ID)
-	s.Require().Len(nodes, 4)
-	s.Require().Equal(nodeList[1], nodes[0])
-	s.Require().Equal(nodeList[2], nodes[1])
-	s.Require().Equal(nodeList[3], nodes[2])
-	s.Require().Equal(nodeList[4], nodes[3])
+	// Should collect ALL nodes: 1, 2, 3, 4, 5 (starting from node 1)
+	s.Require().Equal([]int{0, 1, 2, 3, 4}, collected, "Should have indices 0-4")
+	s.Require().Len(nodes, 5, "Should yield all 5 nodes")
+	s.Require().Equal(nodeList[0], nodes[0], "First should be node 1")
+	s.Require().Equal(nodeList[1], nodes[1], "Second should be node 2")
+	s.Require().Equal(nodeList[2], nodes[2], "Third should be node 3")
+	s.Require().Equal(nodeList[3], nodes[3], "Fourth should be node 4")
+	s.Require().Equal(nodeList[4], nodes[4], "Fifth should be node 5")
 }
 
 func (s *IterSeqTestSuite) TestNextNodes_EarlyBreak() {
@@ -113,9 +116,11 @@ func (s *IterSeqTestSuite) TestPrevNodes_SingleNode() {
 		nodes = append(nodes, n)
 	}
 
-	// Single node has no prev, so iteration should not yield any elements
-	s.Require().Empty(collected)
-	s.Require().Empty(nodes)
+	// Single node should yield itself (this was the bug - it was being skipped)
+	s.Require().Equal([]int{0}, collected, "Should yield index 0")
+	s.Require().Len(nodes, 1, "Should yield exactly one node")
+	s.Require().Equal(node, nodes[0], "Should yield the starting node")
+	s.Require().Equal(uint64(1), nodes[0].ID(), "Node should have correct ID")
 }
 
 func (s *IterSeqTestSuite) TestPrevNodes_LinearChain() {
@@ -136,13 +141,14 @@ func (s *IterSeqTestSuite) TestPrevNodes_LinearChain() {
 		nodes = append(nodes, node)
 	}
 
-	// Should collect nodes 4, 3, 2, 1 (starting from node 5, iterating backward through Prev)
-	s.Require().Equal([]int{0, 1, 2, 3}, collected) // All IDs should be 5 (the starting node's ID)
-	s.Require().Len(nodes, 4)
-	s.Require().Equal(nodeList[3], nodes[0])
-	s.Require().Equal(nodeList[2], nodes[1])
-	s.Require().Equal(nodeList[1], nodes[2])
-	s.Require().Equal(nodeList[0], nodes[3])
+	// Should collect ALL nodes: 5, 4, 3, 2, 1 (starting from node 5, going backward)
+	s.Require().Equal([]int{0, 1, 2, 3, 4}, collected, "Should have indices 0-4")
+	s.Require().Len(nodes, 5, "Should yield all 5 nodes")
+	s.Require().Equal(nodeList[4], nodes[0], "First should be node 5")
+	s.Require().Equal(nodeList[3], nodes[1], "Second should be node 4")
+	s.Require().Equal(nodeList[2], nodes[2], "Third should be node 3")
+	s.Require().Equal(nodeList[1], nodes[3], "Fourth should be node 2")
+	s.Require().Equal(nodeList[0], nodes[4], "Fifth should be node 1")
 }
 
 func (s *IterSeqTestSuite) TestPrevNodes_EarlyBreak() {
@@ -188,7 +194,8 @@ func (s *IterSeqTestSuite) TestNextNodes_DoublyLinkedChain() {
 		nodeIDs = append(nodeIDs, node.ID())
 	}
 
-	s.Require().Equal([]uint64{200, 300}, nodeIDs)
+	// Should include starting node and all following nodes
+	s.Require().Equal([]uint64{100, 200, 300}, nodeIDs, "Should include all nodes starting from node1")
 }
 
 func (s *IterSeqTestSuite) TestPrevNodes_DoublyLinkedChain() {
@@ -208,7 +215,8 @@ func (s *IterSeqTestSuite) TestPrevNodes_DoublyLinkedChain() {
 		nodeIDs = append(nodeIDs, node.ID())
 	}
 
-	s.Require().Equal([]uint64{200, 100}, nodeIDs)
+	// Should include starting node and all previous nodes
+	s.Require().Equal([]uint64{300, 200, 100}, nodeIDs, "Should include all nodes starting from node3 going backward")
 }
 
 // NodeConstructorTestSuite tests node constructor functions

@@ -12,8 +12,8 @@ type NodeChildrenTestSuite struct {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_NilParent() {
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren[string](nil, child1, child2)
 
@@ -23,9 +23,9 @@ func (s *NodeChildrenTestSuite) TestNewNodeChildren_NilParent() {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_ValidParent() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2)
 
@@ -36,7 +36,7 @@ func (s *NodeChildrenTestSuite) TestNewNodeChildren_ValidParent() {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_NoChildren() {
-	parent := NewNode(uint64(100), "parent", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
 
 	children, err := NewNodeChildren[string](parent)
 
@@ -46,10 +46,10 @@ func (s *NodeChildrenTestSuite) TestNewNodeChildren_NoChildren() {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_NilChildrenFiltered() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
 	var nilChild *Node[string]
-	child2 := NewNode(uint64(2), "child2", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren(parent, child1, nilChild, child2)
 
@@ -59,7 +59,7 @@ func (s *NodeChildrenTestSuite) TestNewNodeChildren_NilChildrenFiltered() {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_AllNilChildren() {
-	parent := NewNode(uint64(100), "parent", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
 	var nilChild1, nilChild2 *Node[string]
 
 	children, err := NewNodeChildren(parent, nilChild1, nilChild2)
@@ -70,17 +70,17 @@ func (s *NodeChildrenTestSuite) TestNewNodeChildren_AllNilChildren() {
 }
 
 func (s *NodeChildrenTestSuite) TestNewNodeChildren_SetsParentRelationship() {
-	parent := NewNode(uint64(100), "parent", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
 	parent.BeholdRoot() // Make it root with level 0
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	_, err := NewNodeChildren(parent, child1, child2)
 
 	s.Require().NoError(err)
 	s.Require().Equal(1, child1.Level())
 	s.Require().Equal(1, child2.Level())
-	s.Require().NotNil(parent.Ptr().Next())
+	s.Require().NotNil(parent.Next())
 }
 
 func (s *NodeChildrenTestSuite) TestSize() {
@@ -97,10 +97,10 @@ func (s *NodeChildrenTestSuite) TestSize() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			parent := NewNode(uint64(100), "parent", nil)
+			parent := NewNodeWithChildren(uint64(100), "parent", nil)
 			nodes := make([]*Node[string], tc.numChildren)
 			for i := 0; i < tc.numChildren; i++ {
-				nodes[i] = NewNode(uint64(i+1), "child", nil)
+				nodes[i] = NewNodeWithChildren(uint64(i+1), "child", nil)
 			}
 
 			children, err := NewNodeChildren(parent, nodes...)
@@ -112,8 +112,8 @@ func (s *NodeChildrenTestSuite) TestSize() {
 }
 
 func (s *NodeChildrenTestSuite) TestParent() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
 
 	children, err := NewNodeChildren(parent, child1)
 
@@ -124,10 +124,10 @@ func (s *NodeChildrenTestSuite) TestParent() {
 }
 
 func (s *NodeChildrenTestSuite) TestChild_Found() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
-	child3 := NewNode(uint64(3), "child3", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "child3", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2, child3)
 	s.Require().NoError(err)
@@ -154,8 +154,8 @@ func (s *NodeChildrenTestSuite) TestChild_Found() {
 }
 
 func (s *NodeChildrenTestSuite) TestChild_NotFound() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
 
 	children, err := NewNodeChildren(parent, child1)
 	s.Require().NoError(err)
@@ -168,10 +168,10 @@ func (s *NodeChildrenTestSuite) TestChild_NotFound() {
 }
 
 func (s *NodeChildrenTestSuite) TestChildNth_Found() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
-	child3 := NewNode(uint64(3), "child3", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "child3", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2, child3)
 	s.Require().NoError(err)
@@ -198,8 +198,8 @@ func (s *NodeChildrenTestSuite) TestChildNth_Found() {
 }
 
 func (s *NodeChildrenTestSuite) TestChildNth_NegativeIndex() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
 
 	children, err := NewNodeChildren(parent, child1)
 	s.Require().NoError(err)
@@ -212,8 +212,8 @@ func (s *NodeChildrenTestSuite) TestChildNth_NegativeIndex() {
 }
 
 func (s *NodeChildrenTestSuite) TestChildNth_OutOfBounds() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
 
 	children, err := NewNodeChildren(parent, child1)
 	s.Require().NoError(err)
@@ -226,9 +226,9 @@ func (s *NodeChildrenTestSuite) TestChildNth_OutOfBounds() {
 }
 
 func (s *NodeChildrenTestSuite) TestHasChild() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2)
 	s.Require().NoError(err)
@@ -254,9 +254,9 @@ func (s *NodeChildrenTestSuite) TestHasChild() {
 }
 
 func (s *NodeChildrenTestSuite) TestRelation() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2)
 	s.Require().NoError(err)
@@ -282,10 +282,10 @@ func (s *NodeChildrenTestSuite) TestRelation() {
 }
 
 func (s *NodeChildrenTestSuite) TestNodes_Iteration() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
-	child3 := NewNode(uint64(3), "child3", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "child3", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2, child3)
 	s.Require().NoError(err)
@@ -313,10 +313,10 @@ func (s *NodeChildrenTestSuite) TestNodes_Iteration() {
 }
 
 func (s *NodeChildrenTestSuite) TestNodes_EarlyBreak() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
-	child3 := NewNode(uint64(3), "child3", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "child3", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2, child3)
 	s.Require().NoError(err)
@@ -334,7 +334,7 @@ func (s *NodeChildrenTestSuite) TestNodes_EarlyBreak() {
 }
 
 func (s *NodeChildrenTestSuite) TestNodes_EmptyChildren() {
-	parent := NewNode(uint64(100), "parent", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
 
 	children, err := NewNodeChildren[string](parent)
 	s.Require().NoError(err)
@@ -353,8 +353,8 @@ type ChildNodeTestSuite struct {
 }
 
 func (s *ChildNodeTestSuite) TestNewChild() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child := NewNode(uint64(1), "child", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child := NewNodeWithChildren(uint64(1), "child", nil)
 
 	childNode := newChild(parent, child)
 
@@ -365,8 +365,8 @@ func (s *ChildNodeTestSuite) TestNewChild() {
 }
 
 func (s *ChildNodeTestSuite) TestHash() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child := NewNode(uint64(1), "child", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child := NewNodeWithChildren(uint64(1), "child", nil)
 
 	childNode := newChild(parent, child)
 
@@ -378,10 +378,10 @@ func (s *ChildNodeTestSuite) TestHash() {
 }
 
 func (s *ChildNodeTestSuite) TestHash_UniquePerPair() {
-	parent1 := NewNode(uint64(100), "parent1", nil)
-	parent2 := NewNode(uint64(200), "parent2", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	parent1 := NewNodeWithChildren(uint64(100), "parent1", nil)
+	parent2 := NewNodeWithChildren(uint64(200), "parent2", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	// Different parent-child pairs should have different hashes
 	hash1 := newChild(parent1, child1).Hash()
@@ -398,8 +398,8 @@ func (s *ChildNodeTestSuite) TestHash_UniquePerPair() {
 }
 
 func (s *ChildNodeTestSuite) TestParent() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child := NewNode(uint64(1), "child", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child := NewNodeWithChildren(uint64(1), "child", nil)
 
 	childNode := newChild(parent, child)
 
@@ -409,8 +409,8 @@ func (s *ChildNodeTestSuite) TestParent() {
 }
 
 func (s *ChildNodeTestSuite) TestNode() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child := NewNode(uint64(1), "child", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child := NewNodeWithChildren(uint64(1), "child", nil)
 
 	childNode := newChild(parent, child)
 
@@ -420,9 +420,9 @@ func (s *ChildNodeTestSuite) TestNode() {
 }
 
 func (s *ChildNodeTestSuite) TestChildNode_FromNodeChildren() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2)
 	s.Require().NoError(err)
@@ -445,12 +445,12 @@ type ChildrenIntegrationTestSuite struct {
 
 func (s *ChildrenIntegrationTestSuite) TestCompleteTree() {
 	// Create a simple tree: root -> [child1, child2, child3]
-	root := NewNode(uint64(0), "root", nil)
+	root := NewNodeWithChildren(uint64(0), "root", nil)
 	root.BeholdRoot()
 
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
-	child3 := NewNode(uint64(3), "child3", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "child3", nil)
 
 	children, err := NewNodeChildren(root, child1, child2, child3)
 	s.Require().NoError(err)
@@ -478,18 +478,18 @@ func (s *ChildrenIntegrationTestSuite) TestCompleteTree() {
 
 func (s *ChildrenIntegrationTestSuite) TestMultiLevelTree() {
 	// Create a two-level tree
-	root := NewNode(uint64(0), "root", nil)
+	root := NewNodeWithChildren(uint64(0), "root", nil)
 	root.BeholdRoot()
 
-	child1 := NewNode(uint64(1), "child1", nil)
-	child2 := NewNode(uint64(2), "child2", nil)
+	child1 := NewNodeWithChildren(uint64(1), "child1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "child2", nil)
 
 	rootChildren, err := NewNodeChildren(root, child1, child2)
 	s.Require().NoError(err)
 
 	// Add grandchildren to child1
-	grandchild1 := NewNode(uint64(11), "grandchild1", nil)
-	grandchild2 := NewNode(uint64(12), "grandchild2", nil)
+	grandchild1 := NewNodeWithChildren(uint64(11), "grandchild1", nil)
+	grandchild2 := NewNodeWithChildren(uint64(12), "grandchild2", nil)
 
 	child1Children, err := NewNodeChildren(child1, grandchild1, grandchild2)
 	s.Require().NoError(err)
@@ -510,10 +510,10 @@ func (s *ChildrenIntegrationTestSuite) TestMultiLevelTree() {
 }
 
 func (s *ChildrenIntegrationTestSuite) TestChildNode_AccessThroughMethods() {
-	parent := NewNode(uint64(100), "parent", nil)
-	child1 := NewNode(uint64(1), "value1", nil)
-	child2 := NewNode(uint64(2), "value2", nil)
-	child3 := NewNode(uint64(3), "value3", nil)
+	parent := NewNodeWithChildren(uint64(100), "parent", nil)
+	child1 := NewNodeWithChildren(uint64(1), "value1", nil)
+	child2 := NewNodeWithChildren(uint64(2), "value2", nil)
+	child3 := NewNodeWithChildren(uint64(3), "value3", nil)
 
 	children, err := NewNodeChildren(parent, child1, child2, child3)
 	s.Require().NoError(err)
@@ -541,8 +541,8 @@ func (s *ChildrenIntegrationTestSuite) TestChildNode_AccessThroughMethods() {
 
 func (s *ChildrenIntegrationTestSuite) TestDifferentTypes() {
 	// Test with int type
-	intParent := NewNode(uint64(100), 42, nil)
-	intChild := NewNode(uint64(1), 10, nil)
+	intParent := NewNodeWithChildren(uint64(100), 42, nil)
+	intChild := NewNodeWithChildren(uint64(1), 10, nil)
 
 	intChildren, err := NewNodeChildren(intParent, intChild)
 	s.Require().NoError(err)
@@ -553,8 +553,8 @@ func (s *ChildrenIntegrationTestSuite) TestDifferentTypes() {
 	s.Require().Equal(10, ic.Node().Value())
 
 	// Test with float64 type
-	floatParent := NewNode(uint64(200), 3.14, nil)
-	floatChild := NewNode(uint64(2), 2.71, nil)
+	floatParent := NewNodeWithChildren(uint64(200), 3.14, nil)
+	floatChild := NewNodeWithChildren(uint64(2), 2.71, nil)
 
 	floatChildren, err := NewNodeChildren(floatParent, floatChild)
 	s.Require().NoError(err)

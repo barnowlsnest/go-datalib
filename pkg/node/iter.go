@@ -11,11 +11,19 @@ func move(it Iterable) iter.Seq2[int, *Node] {
 			err error
 		)
 
+		// First yield the current node
+		ne, err = it.Curr()
 		if err != nil {
 			return
 		}
 
 		var i int
+		if !yield(i, ne) {
+			return
+		}
+		i++
+
+		// Then iterate through remaining nodes
 		for it.HasNext() {
 			ne, err = it.Next()
 			if err != nil {
@@ -24,7 +32,7 @@ func move(it Iterable) iter.Seq2[int, *Node] {
 			if !yield(i, ne) {
 				return
 			}
-			i += 1
+			i++
 		}
 	}
 }
@@ -49,44 +57,10 @@ type Iterable interface {
 	Curr() (*Node, error)
 }
 
-// NextNodes creates a Go 1.23+ iterator that traverses nodes in forward direction.
-//
-// This function returns an iter.Seq2 that can be used with range loops in Go 1.23+.
-// The iterator yields pairs of (node_id, node) as it traverses from the starting
-// node through all subsequent nodes via Next() pointers.
-//
-// Parameters:
-//   - n: The starting node for forward traversal
-//
-// Returns:
-//   - An iter.Seq2[uint64, *Node] that yields (node_id, node) pairs
-//
-// Example:
-//
-//	for id, node := range NextNodes(startNode) {
-//	    fmt.Printf("Node %d\n", id)
-//	}
 func NextNodes(n *Node) iter.Seq2[int, *Node] {
 	return move(Forward(n))
 }
 
-// PrevNodes creates a Go 1.23+ iterator that traverses nodes in backward direction.
-//
-// This function returns an iter.Seq2 that can be used with range loops in Go 1.23+.
-// The iterator yields pairs of (node_id, node) as it traverses from the starting
-// node through all previous nodes via Prev() pointers.
-//
-// Parameters:
-//   - n: The starting node for backward traversal
-//
-// Returns:
-//   - An iter.Seq2[uint64, *Node] that yields (node_id, node) pairs
-//
-// Example:
-//
-//	for id, node := range PrevNodes(endNode) {
-//	    fmt.Printf("Node %d\n", id)
-//	}
 func PrevNodes(n *Node) iter.Seq2[int, *Node] {
 	return move(Backward(n))
 }

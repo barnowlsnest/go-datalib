@@ -40,7 +40,7 @@ func NewNodeChildren[T comparable](parent *Node[T], nodes ...*Node[T]) (*NodeChi
 	inx := map[int]*ChildNode[T]{}
 	for index, node := range notNilNodes {
 		if index == 0 {
-			parent.ptr.WithNext(node.ptr)
+			parent.WithNext(node.Node)
 		}
 
 		node.WithParent(parent)

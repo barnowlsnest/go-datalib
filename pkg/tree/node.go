@@ -5,18 +5,22 @@ import (
 )
 
 type Node[T comparable] struct {
+	*node.Node
 	value    T
 	level    int
-	ptr      *node.Node
 	children *NodeChildren[T]
 }
 
-func NewNode[T comparable](id uint64, value T, nodes *NodeChildren[T]) *Node[T] {
+func NewNode[T comparable](id uint64, value T) *Node[T] {
+	return NewNodeWithChildren(id, value, nil)
+}
+
+func NewNodeWithChildren[T comparable](id uint64, value T, nodes *NodeChildren[T]) *Node[T] {
 	return &Node[T]{
+		Node:     node.ID(id),
 		value:    value,
-		level:    -1,
-		ptr:      node.ID(id),
 		children: nodes,
+		level:    -1,
 	}
 }
 
@@ -28,16 +32,12 @@ func (n *Node[T]) Level() int {
 	return n.level
 }
 
-func (n *Node[T]) ID() uint64 {
-	return n.ptr.ID()
-}
-
 func (n *Node[T]) IsRoot() bool {
-	return n.level == 0 && n.ptr.Prev() == nil
+	return n.level == 0 && n.Prev() == nil
 }
 
 func (n *Node[T]) BeholdRoot() {
-	n.ptr.WithPrev(nil)
+	n.WithPrev(nil)
 	n.level = 0
 }
 
@@ -46,12 +46,12 @@ func (n *Node[T]) WithParent(parent *Node[T]) {
 		return
 	}
 
-	n.ptr.WithPrev(parent.ptr)
+	n.WithPrev(parent.Node)
 	n.level = parent.level + 1
 }
 
-func (n *Node[T]) Ptr() *node.Node {
-	return n.ptr
+func (n *Node[T]) WithChildren(children *NodeChildren[T]) {
+	n.children = children
 }
 
 func (n *Node[T]) Children() *NodeChildren[T] {
