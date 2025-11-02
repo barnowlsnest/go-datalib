@@ -1,6 +1,7 @@
 package tree
 
 import (
+	"cmp"
 	"fmt"
 
 	"github.com/barnowlsnest/go-datalib/pkg/list"
@@ -9,12 +10,20 @@ import (
 )
 
 type (
-	N[T comparable] struct {
+	N[T cmp.Ordered] struct {
 		ID  uint64
 		Val T
 	}
 
-	Nary[T comparable] struct {
+	LevelParams[T cmp.Ordered] struct {
+		Node   *Node[T]
+		MinVal T
+		MaxVal T
+	}
+
+	LevelFn[T cmp.Ordered] func(params LevelParams[T]) bool
+
+	Nary[T cmp.Ordered] struct {
 		root               *Node[T]
 		nodes              map[uint64]*Node[T]
 		levels             map[uint8]*list.LinkedList
@@ -24,7 +33,7 @@ type (
 	}
 )
 
-func NewNary[T comparable](maxDepth, maxNodesPerNode uint8) *Nary[T] {
+func NewNary[T cmp.Ordered](maxDepth, maxNodesPerNode uint8) *Nary[T] {
 	return &Nary[T]{
 		levels:             make(map[uint8]*list.LinkedList, maxDepth),
 		nodes:              make(map[uint64]*Node[T], maxDepth*maxNodesPerNode),
@@ -33,11 +42,11 @@ func NewNary[T comparable](maxDepth, maxNodesPerNode uint8) *Nary[T] {
 	}
 }
 
-func NewBinary[T comparable](maxDepth uint8) *Nary[T] {
+func NewBinary[T cmp.Ordered](maxDepth uint8) *Nary[T] {
 	return NewNary[T](maxDepth, 2)
 }
 
-func NewTernary[T comparable](maxDepth uint8) *Nary[T] {
+func NewTernary[T cmp.Ordered](maxDepth uint8) *Nary[T] {
 	return NewNary[T](maxDepth, 3)
 }
 
@@ -131,26 +140,47 @@ func (t *Nary[T]) Level(level uint8) ([]*Node[T], error) {
 	return nodes, nil
 }
 
-func (t *Nary[T]) LevelFunc(level uint8, fn func(node *Node[T])) error {
+func (t *Nary[T]) LevelFunc(level uint8, fn LevelFn[T]) error {
 	nodes, err := t.Level(level)
 	if err != nil {
 		return err
 	}
 
-	var errFn error
+	values := make([]T, 0, len(nodes))
 	for _, n := range nodes {
-		errFn = func() error {
+		values = append(values, n.Value())
+	}
+
+	minVal, maxVal, err := utils.MinMax(values)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range nodes {
+		var shouldCont bool
+		err := func() (err error) {
 			defer func() {
 				if r := recover(); r != nil {
-					errFn = ErrUnexpected
+					err = ErrUnexpected
 					return
 				}
 			}()
-			fn(n)
-
+			shouldCont = fn(LevelParams[T]{
+				Node:   n,
+				MinVal: minVal,
+				MaxVal: maxVal,
+			})
 			return nil
 		}()
+
+		if err != nil {
+			return err
+		}
+
+		if !shouldCont {
+			break
+		}
 	}
 
-	return errFn
+	return nil
 }

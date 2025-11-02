@@ -59,10 +59,22 @@ func (s *TreeConstructorTestSuite) TestNew_DifferentTypes() {
 	// Test with float64
 	floatTree := NewNary[float64](5, 10)
 	s.Require().NotNil(floatTree)
+}
 
-	// Test with bool
-	boolTree := NewNary[bool](5, 10)
-	s.Require().NotNil(boolTree)
+func (s *TreeConstructorTestSuite) TestNewBinary() {
+	tree := NewBinary[int](10)
+
+	s.Require().NotNil(tree)
+	s.Require().Equal(uint8(10), tree.maxDepth)
+	s.Require().Equal(uint8(2), tree.maxChildrenPerNode)
+}
+
+func (s *TreeConstructorTestSuite) TestNewTernary() {
+	tree := NewTernary[int](10)
+
+	s.Require().NotNil(tree)
+	s.Require().Equal(uint8(10), tree.maxDepth)
+	s.Require().Equal(uint8(3), tree.maxChildrenPerNode)
 }
 
 // TreeRootTestSuite tests root node operations
@@ -219,8 +231,9 @@ func (s *TreeLevelFuncTestSuite) TestLevelFunc_LevelNotFound() {
 	tree := NewNary[string](5, 10)
 
 	callCount := 0
-	err := tree.LevelFunc(0, func(node *Node[string]) {
+	err := tree.LevelFunc(0, func(params LevelParams[string]) bool {
 		callCount++
+		return true
 	})
 
 	s.Require().Error(err)
@@ -235,6 +248,95 @@ func (s *TreeLevelFuncTestSuite) TestLevelFunc_NilFunction() {
 	s.Require().NotPanics(func() {
 		_ = tree.LevelFunc(0, nil)
 	})
+}
+
+func (s *TreeLevelFuncTestSuite) TestLevelFunc_PanicRecovery() {
+	tree := NewNary[string](5, 10)
+
+	// Add root and children
+	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
+	_ = tree.AddChildren(1,
+		N[string]{ID: 2, Val: "a"},
+		N[string]{ID: 3, Val: "b"},
+	)
+
+	// Function that panics
+	err := tree.LevelFunc(1, func(params LevelParams[string]) bool {
+		panic("intentional panic for testing")
+	})
+
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrUnexpected)
+}
+
+func (s *TreeLevelFuncTestSuite) TestLevelFunc_EarlyExit() {
+	tree := NewNary[string](5, 10)
+
+	// Add root and children
+	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
+	_ = tree.AddChildren(1,
+		N[string]{ID: 2, Val: "a"},
+		N[string]{ID: 3, Val: "b"},
+		N[string]{ID: 4, Val: "c"},
+	)
+
+	callCount := 0
+	err := tree.LevelFunc(1, func(params LevelParams[string]) bool {
+		callCount++
+		return false // Stop iteration after first call
+	})
+
+	s.Require().NoError(err)
+	s.Require().Equal(1, callCount, "Should stop after first node")
+}
+
+func (s *TreeLevelFuncTestSuite) TestLevelFunc_ContinueIteration() {
+	tree := NewNary[string](5, 10)
+
+	// Add root and children
+	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
+	_ = tree.AddChildren(1,
+		N[string]{ID: 2, Val: "a"},
+		N[string]{ID: 3, Val: "b"},
+		N[string]{ID: 4, Val: "c"},
+	)
+
+	callCount := 0
+	err := tree.LevelFunc(1, func(params LevelParams[string]) bool {
+		callCount++
+		return true // Continue iteration
+	})
+
+	s.Require().NoError(err)
+	s.Require().Equal(3, callCount, "Should iterate all nodes")
+}
+
+func (s *TreeLevelFuncTestSuite) TestLevelFunc_ParametersProvided() {
+	tree := NewNary[int](5, 10)
+
+	// Add root and children with numeric values
+	_ = tree.AddRoot(N[int]{ID: 1, Val: 10})
+	_ = tree.AddChildren(1,
+		N[int]{ID: 2, Val: 5},
+		N[int]{ID: 3, Val: 15},
+		N[int]{ID: 4, Val: 3},
+	)
+
+	var capturedParams []LevelParams[int]
+	err := tree.LevelFunc(1, func(params LevelParams[int]) bool {
+		capturedParams = append(capturedParams, params)
+		return true
+	})
+
+	s.Require().NoError(err)
+	s.Require().Len(capturedParams, 3)
+
+	// Verify each param has a node
+	for _, p := range capturedParams {
+		s.Require().NotNil(p.Node)
+		s.Require().NotZero(p.MinVal)
+		s.Require().NotZero(p.MaxVal)
+	}
 }
 
 // TreeNodeStructTestSuite tests the N struct
@@ -276,10 +378,19 @@ func (s *TreeNodeStructTestSuite) TestNodeStruct_DifferentTypes() {
 	// Float64 type
 	floatNode := N[float64]{ID: 3, Val: 3.14}
 	s.Require().Equal(3.14, floatNode.Val)
+}
 
-	// Bool type
-	boolNode := N[bool]{ID: 4, Val: true}
-	s.Require().True(boolNode.Val)
+func (s *TreeNodeStructTestSuite) TestLevelParams_Structure() {
+	node := NewNode[int](1, 100)
+	params := LevelParams[int]{
+		Node:   node,
+		MinVal: 10,
+		MaxVal: 200,
+	}
+
+	s.Require().Equal(node, params.Node)
+	s.Require().Equal(10, params.MinVal)
+	s.Require().Equal(200, params.MaxVal)
 }
 
 // TreeInternalMethodsTestSuite tests internal/private methods behavior
@@ -461,6 +572,24 @@ func (s *TreeEdgeCasesTestSuite) TestLevel_BoundaryValues() {
 	}
 }
 
+func (s *TreeEdgeCasesTestSuite) TestLevelFunc_EmptyLevel() {
+	tree := NewNary[int](10, 10)
+	_ = tree.AddRoot(N[int]{ID: 1, Val: 100})
+
+	// Level 0 exists but has only one node
+	callCount := 0
+	err := tree.LevelFunc(0, func(params LevelParams[int]) bool {
+		callCount++
+		s.Require().Equal(100, params.Node.Value())
+		s.Require().Equal(100, params.MinVal)
+		s.Require().Equal(100, params.MaxVal)
+		return true
+	})
+
+	s.Require().NoError(err)
+	s.Require().Equal(1, callCount)
+}
+
 // TreeConcurrencyTestSuite tests potential concurrency issues
 type TreeConcurrencyTestSuite struct {
 	suite.Suite
@@ -569,8 +698,9 @@ func (s *TreeIntegrationTestSuite) TestLevelFunc() {
 
 	// Test LevelFunc on level 1
 	values := []string{}
-	err := tree.LevelFunc(1, func(node *Node[string]) {
-		values = append(values, node.Value())
+	err := tree.LevelFunc(1, func(params LevelParams[string]) bool {
+		values = append(values, params.Node.Value())
+		return true
 	})
 
 	s.Require().NoError(err)
@@ -633,6 +763,39 @@ func (s *TreeIntegrationTestSuite) TestAddingTooManyChildrenAtOnce() {
 		N[string]{ID: 5, Val: "child4"},
 	)
 
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrNotAllowedMaxNodes)
+}
+
+func (s *TreeIntegrationTestSuite) TestBinaryTreeOperations() {
+	tree := NewBinary[int](5)
+
+	_ = tree.AddRoot(N[int]{ID: 1, Val: 10})
+	err := tree.AddChildren(1,
+		N[int]{ID: 2, Val: 5},
+		N[int]{ID: 3, Val: 15},
+	)
+	s.Require().NoError(err)
+
+	// Try to add a third child (should fail for binary tree)
+	err = tree.AddChildren(1, N[int]{ID: 4, Val: 20})
+	s.Require().Error(err)
+	s.Require().ErrorIs(err, ErrNotAllowedMaxNodes)
+}
+
+func (s *TreeIntegrationTestSuite) TestTernaryTreeOperations() {
+	tree := NewTernary[int](5)
+
+	_ = tree.AddRoot(N[int]{ID: 1, Val: 10})
+	err := tree.AddChildren(1,
+		N[int]{ID: 2, Val: 5},
+		N[int]{ID: 3, Val: 10},
+		N[int]{ID: 4, Val: 15},
+	)
+	s.Require().NoError(err)
+
+	// Try to add a fourth child (should fail for ternary tree)
+	err = tree.AddChildren(1, N[int]{ID: 5, Val: 20})
 	s.Require().Error(err)
 	s.Require().ErrorIs(err, ErrNotAllowedMaxNodes)
 }
