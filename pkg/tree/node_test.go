@@ -162,7 +162,7 @@ type NodeRootTestSuite struct {
 func (s *NodeRootTestSuite) TestIsRoot_NewNode() {
 	node := NewNodeWithChildren(uint64(1), "test", nil)
 
-	// New node is not a root (level is -1, not 0)
+	// NewNary node is not a root (level is -1, not 0)
 	s.Require().False(node.IsRoot())
 }
 

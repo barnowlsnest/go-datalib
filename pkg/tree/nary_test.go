@@ -6,13 +6,13 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// TreeConstructorTestSuite tests the Tree constructor
+// TreeConstructorTestSuite tests the Nary constructor
 type TreeConstructorTestSuite struct {
 	suite.Suite
 }
 
 func (s *TreeConstructorTestSuite) TestNew_DefaultValues() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	s.Require().NotNil(tree)
 	s.Require().Nil(tree.root)
@@ -38,7 +38,7 @@ func (s *TreeConstructorTestSuite) TestNew_DifferentSizes() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			tree := New[int](tc.maxDepth, tc.maxChildrenPerNode)
+			tree := NewNary[int](tc.maxDepth, tc.maxChildrenPerNode)
 
 			s.Require().NotNil(tree)
 			s.Require().Equal(tc.maxDepth, tree.maxDepth)
@@ -49,19 +49,19 @@ func (s *TreeConstructorTestSuite) TestNew_DifferentSizes() {
 
 func (s *TreeConstructorTestSuite) TestNew_DifferentTypes() {
 	// Test with string
-	stringTree := New[string](5, 10)
+	stringTree := NewNary[string](5, 10)
 	s.Require().NotNil(stringTree)
 
 	// Test with int
-	intTree := New[int](5, 10)
+	intTree := NewNary[int](5, 10)
 	s.Require().NotNil(intTree)
 
 	// Test with float64
-	floatTree := New[float64](5, 10)
+	floatTree := NewNary[float64](5, 10)
 	s.Require().NotNil(floatTree)
 
 	// Test with bool
-	boolTree := New[bool](5, 10)
+	boolTree := NewNary[bool](5, 10)
 	s.Require().NotNil(boolTree)
 }
 
@@ -71,7 +71,7 @@ type TreeRootTestSuite struct {
 }
 
 func (s *TreeRootTestSuite) TestAddRoot_Success() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	err := tree.AddRoot(N[string]{ID: 1, Val: "root"})
 
@@ -89,7 +89,7 @@ func (s *TreeRootTestSuite) TestAddRoot_Success() {
 }
 
 func (s *TreeRootTestSuite) TestAddRoot_MultipleRoots() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// First root should succeed
 	err1 := tree.AddRoot(N[string]{ID: 1, Val: "root1"})
@@ -111,7 +111,7 @@ type TreeChildrenTestSuite struct {
 }
 
 func (s *TreeChildrenTestSuite) TestAddChildren_ParentNotFound() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	err := tree.AddChildren(999, N[string]{ID: 1, Val: "child"})
 
@@ -120,7 +120,7 @@ func (s *TreeChildrenTestSuite) TestAddChildren_ParentNotFound() {
 }
 
 func (s *TreeChildrenTestSuite) TestAddChildren_ExceedsMaxChildrenPerNode() {
-	tree := New[string](5, 2) // max children limit is 2
+	tree := NewNary[string](5, 2) // max children limit is 2
 
 	// This test validates validation logic through error scenarios
 	err := tree.AddChildren(1,
@@ -150,7 +150,7 @@ func (s *TreeChildrenTestSuite) TestAddChildren_MaxChildrenValidation() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			tree := New[string](5, tc.maxChildrenPerNode)
+			tree := NewNary[string](5, tc.maxChildrenPerNode)
 
 			children := make([]N[string], tc.childrenCount)
 			for i := 0; i < tc.childrenCount; i++ {
@@ -176,7 +176,7 @@ type TreeLevelTestSuite struct {
 }
 
 func (s *TreeLevelTestSuite) TestLevel_NotFound() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	nodes, err := tree.Level(0)
 
@@ -199,7 +199,7 @@ func (s *TreeLevelTestSuite) TestLevel_DifferentLevels() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			tree := New[string](20, 10)
+			tree := NewNary[string](20, 10)
 
 			nodes, err := tree.Level(tc.level)
 
@@ -216,7 +216,7 @@ type TreeLevelFuncTestSuite struct {
 }
 
 func (s *TreeLevelFuncTestSuite) TestLevelFunc_LevelNotFound() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	callCount := 0
 	err := tree.LevelFunc(0, func(node *Node[string]) {
@@ -229,7 +229,7 @@ func (s *TreeLevelFuncTestSuite) TestLevelFunc_LevelNotFound() {
 }
 
 func (s *TreeLevelFuncTestSuite) TestLevelFunc_NilFunction() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Calling with nil function should handle gracefully
 	s.Require().NotPanics(func() {
@@ -288,7 +288,7 @@ type TreeInternalMethodsTestSuite struct {
 }
 
 func (s *TreeInternalMethodsTestSuite) TestToNodes_EmptySlice() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	nodes := tree.toNodes()
 
@@ -297,7 +297,7 @@ func (s *TreeInternalMethodsTestSuite) TestToNodes_EmptySlice() {
 }
 
 func (s *TreeInternalMethodsTestSuite) TestToNodes_SingleNode() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	nodes := tree.toNodes(N[string]{ID: 1, Val: "test"})
 
@@ -312,7 +312,7 @@ func (s *TreeInternalMethodsTestSuite) TestToNodes_SingleNode() {
 }
 
 func (s *TreeInternalMethodsTestSuite) TestToNodes_MultipleNodes() {
-	tree := New[int](5, 10)
+	tree := NewNary[int](5, 10)
 
 	nNodes := []N[int]{
 		{ID: 1, Val: 100},
@@ -338,7 +338,7 @@ func (s *TreeInternalMethodsTestSuite) TestToNodes_MultipleNodes() {
 }
 
 func (s *TreeInternalMethodsTestSuite) TestToNodes_OverwriteExisting() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Add first node
 	nodes1 := tree.toNodes(N[string]{ID: 1, Val: "first"})
@@ -372,7 +372,7 @@ func (s *TreeValidationTestSuite) TestMaxDepthValidation() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			tree := New[string](tc.maxDepth, 10)
+			tree := NewNary[string](tc.maxDepth, 10)
 			s.Require().Equal(tc.maxDepth, tree.maxDepth)
 		})
 	}
@@ -391,7 +391,7 @@ func (s *TreeValidationTestSuite) TestMaxChildrenPerNodeValidation() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			tree := New[string](5, tc.maxChildrenPerNode)
+			tree := NewNary[string](5, tc.maxChildrenPerNode)
 			s.Require().Equal(tc.maxChildrenPerNode, tree.maxChildrenPerNode)
 		})
 	}
@@ -403,8 +403,8 @@ type TreeEdgeCasesTestSuite struct {
 }
 
 func (s *TreeEdgeCasesTestSuite) TestMinimalTree() {
-	// Tree with depth 1 and 1 child per node
-	tree := New[string](1, 1)
+	// Nary with depth 1 and 1 child per node
+	tree := NewNary[string](1, 1)
 
 	s.Require().NotNil(tree)
 	s.Require().Equal(uint8(1), tree.maxDepth)
@@ -412,8 +412,8 @@ func (s *TreeEdgeCasesTestSuite) TestMinimalTree() {
 }
 
 func (s *TreeEdgeCasesTestSuite) TestMaximalTree() {
-	// Tree with max uint8 values
-	tree := New[string](255, 255)
+	// Nary with max uint8 values
+	tree := NewNary[string](255, 255)
 
 	s.Require().NotNil(tree)
 	s.Require().Equal(uint8(255), tree.maxDepth)
@@ -421,8 +421,8 @@ func (s *TreeEdgeCasesTestSuite) TestMaximalTree() {
 }
 
 func (s *TreeEdgeCasesTestSuite) TestZeroValues() {
-	// Tree with zero constraints (unusual but valid)
-	tree := New[string](0, 0)
+	// Nary with zero constraints (unusual but valid)
+	tree := NewNary[string](0, 0)
 
 	s.Require().NotNil(tree)
 	s.Require().Equal(uint8(0), tree.maxDepth)
@@ -430,7 +430,7 @@ func (s *TreeEdgeCasesTestSuite) TestZeroValues() {
 }
 
 func (s *TreeEdgeCasesTestSuite) TestAddChildren_ZeroChildren() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Adding zero children should fail because parent doesn't exist
 	err := tree.AddChildren(1)
@@ -440,7 +440,7 @@ func (s *TreeEdgeCasesTestSuite) TestAddChildren_ZeroChildren() {
 }
 
 func (s *TreeEdgeCasesTestSuite) TestLevel_BoundaryValues() {
-	tree := New[string](255, 10)
+	tree := NewNary[string](255, 10)
 
 	testCases := []struct {
 		name  string
@@ -467,7 +467,7 @@ type TreeConcurrencyTestSuite struct {
 }
 
 func (s *TreeConcurrencyTestSuite) TestMapsInitialization() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Verify maps are initialized and not shared
 	s.Require().NotNil(tree.nodes)
@@ -479,8 +479,8 @@ func (s *TreeConcurrencyTestSuite) TestMapsInitialization() {
 }
 
 func (s *TreeConcurrencyTestSuite) TestIndependentTrees() {
-	tree1 := New[string](5, 10)
-	tree2 := New[string](5, 10)
+	tree1 := NewNary[string](5, 10)
+	tree2 := NewNary[string](5, 10)
 
 	// Add nodes to tree1
 	tree1.toNodes(N[string]{ID: 1, Val: "tree1"})
@@ -496,7 +496,7 @@ type TreeIntegrationTestSuite struct {
 }
 
 func (s *TreeIntegrationTestSuite) TestSimpleTree() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Add root
 	err := tree.AddRoot(N[string]{ID: 1, Val: "root"})
@@ -522,7 +522,7 @@ func (s *TreeIntegrationTestSuite) TestSimpleTree() {
 }
 
 func (s *TreeIntegrationTestSuite) TestMultiLevelTree() {
-	tree := New[int](10, 5)
+	tree := NewNary[int](10, 5)
 
 	// Add root
 	err := tree.AddRoot(N[int]{ID: 1, Val: 100})
@@ -557,7 +557,7 @@ func (s *TreeIntegrationTestSuite) TestMultiLevelTree() {
 }
 
 func (s *TreeIntegrationTestSuite) TestLevelFunc() {
-	tree := New[string](5, 10)
+	tree := NewNary[string](5, 10)
 
 	// Build tree
 	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
@@ -581,7 +581,7 @@ func (s *TreeIntegrationTestSuite) TestLevelFunc() {
 }
 
 func (s *TreeIntegrationTestSuite) TestMaxDepthEnforcement() {
-	tree := New[string](2, 10) // maxDepth = 2
+	tree := NewNary[string](2, 10) // maxDepth = 2
 
 	// Add root (level 0)
 	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
@@ -601,7 +601,7 @@ func (s *TreeIntegrationTestSuite) TestMaxDepthEnforcement() {
 }
 
 func (s *TreeIntegrationTestSuite) TestMaxChildrenEnforcement() {
-	tree := New[string](5, 2)
+	tree := NewNary[string](5, 2)
 
 	// Add root
 	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})
@@ -620,7 +620,7 @@ func (s *TreeIntegrationTestSuite) TestMaxChildrenEnforcement() {
 }
 
 func (s *TreeIntegrationTestSuite) TestAddingTooManyChildrenAtOnce() {
-	tree := New[string](5, 3)
+	tree := NewNary[string](5, 3)
 
 	// Add root
 	_ = tree.AddRoot(N[string]{ID: 1, Val: "root"})

@@ -14,7 +14,7 @@ type (
 		Val T
 	}
 
-	Tree[T comparable] struct {
+	Nary[T comparable] struct {
 		root               *Node[T]
 		nodes              map[uint64]*Node[T]
 		levels             map[uint8]*list.LinkedList
@@ -24,8 +24,8 @@ type (
 	}
 )
 
-func New[T comparable](maxDepth, maxNodesPerNode uint8) *Tree[T] {
-	return &Tree[T]{
+func NewNary[T comparable](maxDepth, maxNodesPerNode uint8) *Nary[T] {
+	return &Nary[T]{
 		levels:             make(map[uint8]*list.LinkedList, maxDepth),
 		nodes:              make(map[uint64]*Node[T], maxDepth*maxNodesPerNode),
 		maxDepth:           maxDepth,
@@ -33,7 +33,15 @@ func New[T comparable](maxDepth, maxNodesPerNode uint8) *Tree[T] {
 	}
 }
 
-func (t *Tree[T]) toNodes(nNodes ...N[T]) []*Node[T] {
+func NewBinary[T comparable](maxDepth uint8) *Nary[T] {
+	return NewNary[T](maxDepth, 2)
+}
+
+func NewTernary[T comparable](maxDepth uint8) *Nary[T] {
+	return NewNary[T](maxDepth, 3)
+}
+
+func (t *Nary[T]) toNodes(nNodes ...N[T]) []*Node[T] {
 	nodes := make([]*Node[T], 0, len(nNodes))
 	for _, n := range nNodes {
 		tNode := NewNode[T](n.ID, n.Val)
@@ -44,7 +52,7 @@ func (t *Tree[T]) toNodes(nNodes ...N[T]) []*Node[T] {
 	return nodes
 }
 
-func (t *Tree[T]) AddRoot(n N[T]) error {
+func (t *Nary[T]) AddRoot(n N[T]) error {
 	if t.root != nil {
 		return ErrNotAllowed
 	}
@@ -59,7 +67,7 @@ func (t *Tree[T]) AddRoot(n N[T]) error {
 	return nil
 }
 
-func (t *Tree[T]) AddChildren(pID uint64, nNodes ...N[T]) error {
+func (t *Nary[T]) AddChildren(pID uint64, nNodes ...N[T]) error {
 	parent, exists := t.nodes[pID]
 	if !exists {
 		return ErrNilParent
@@ -104,7 +112,7 @@ func (t *Tree[T]) AddChildren(pID uint64, nNodes ...N[T]) error {
 	return nil
 }
 
-func (t *Tree[T]) Level(level uint8) ([]*Node[T], error) {
+func (t *Nary[T]) Level(level uint8) ([]*Node[T], error) {
 	levelNodes, exists := t.levels[level]
 	if !exists {
 		return nil, ErrLevelNotFound
@@ -123,7 +131,7 @@ func (t *Tree[T]) Level(level uint8) ([]*Node[T], error) {
 	return nodes, nil
 }
 
-func (t *Tree[T]) LevelFunc(level uint8, fn func(node *Node[T])) error {
+func (t *Nary[T]) LevelFunc(level uint8, fn func(node *Node[T])) error {
 	nodes, err := t.Level(level)
 	if err != nil {
 		return err
