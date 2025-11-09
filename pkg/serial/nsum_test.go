@@ -37,13 +37,13 @@ func (s *NSumTestSuite) TestNSum_Deterministic() {
 	assert.Equal(s.T(), hash100_200, NSum(100, 200))
 }
 
-func (s *NSumTestSuite) TestNSum_OrderMatters() {
-	// NSum should produce different results for different order
+func (s *NSumTestSuite) TestNSum_OrderDoesNotMatter() {
+	// NSum is now symmetric (commutative)
 	hash1 := NSum(123, 456)
 	hash2 := NSum(456, 123)
 
-	assert.NotEqual(s.T(), hash1, hash2,
-		"NSum(a, b) should differ from NSum(b, a)")
+	assert.Equal(s.T(), hash1, hash2,
+		"NSum(a, b) should equal NSum(b, a) - symmetric property")
 }
 
 func (s *NSumTestSuite) TestNSum_ZeroValues() {
@@ -53,8 +53,9 @@ func (s *NSumTestSuite) TestNSum_ZeroValues() {
 
 	// NSum(0, 0) produces magic constant, not zero
 	assert.NotEqual(s.T(), hash00, hash01, "NSum(0, 1) should differ from NSum(0, 0)")
+	// Since NSum is now symmetric, NSum(0, 1) == NSum(1, 0)
+	assert.Equal(s.T(), hash01, hash10, "NSum(0, 1) should equal NSum(1, 0) due to symmetry")
 	assert.NotEqual(s.T(), hash00, hash10, "NSum(1, 0) should differ from NSum(0, 0)")
-	assert.NotEqual(s.T(), hash01, hash10, "NSum(0, 1) should differ from NSum(1, 0)")
 }
 
 func (s *NSumTestSuite) TestNSum_MaxValues() {
@@ -69,10 +70,10 @@ func (s *NSumTestSuite) TestNSum_MaxValues() {
 	assert.Greater(s.T(), hash2, uint64(0))
 	assert.Greater(s.T(), hash3, uint64(0))
 
-	// All should be different
+	// hash2 and hash3 should be equal due to symmetry
 	assert.NotEqual(s.T(), hash1, hash2)
 	assert.NotEqual(s.T(), hash1, hash3)
-	assert.NotEqual(s.T(), hash2, hash3)
+	assert.Equal(s.T(), hash2, hash3, "NSum(maxUint, 0) should equal NSum(0, maxUint) due to symmetry")
 }
 
 func (s *NSumTestSuite) TestNSum_Distribution() {
@@ -96,16 +97,17 @@ func (s *NSumTestSuite) TestNSum_Distribution() {
 }
 
 func (s *NSumTestSuite) TestNSum_PairUniqueness() {
-	// Test that different pairs produce unique hashes
+	// Test that truly different pairs produce unique hashes
+	// Now that NSum is symmetric, pairs like (1,2) and (2,1) produce the same hash
 	type pair struct {
 		from, to uint64
 	}
 
 	pairs := []pair{
-		{1, 2}, {2, 1},
-		{10, 20}, {20, 10},
-		{100, 200}, {200, 100},
-		{1000, 2000}, {2000, 1000},
+		{1, 2},
+		{10, 20},
+		{100, 200},
+		{1000, 2000},
 	}
 
 	hashes := make(map[uint64]pair)
@@ -120,7 +122,11 @@ func (s *NSumTestSuite) TestNSum_PairUniqueness() {
 	}
 
 	assert.Equal(s.T(), len(pairs), len(hashes),
-		"all pairs should produce unique hashes")
+		"all unique pairs should produce unique hashes")
+
+	// Verify symmetry: reversed pairs should produce the same hash
+	assert.Equal(s.T(), NSum(1, 2), NSum(2, 1))
+	assert.Equal(s.T(), NSum(10, 20), NSum(20, 10))
 }
 
 // HashcodeTestSuite tests the internal hashcode function
@@ -217,13 +223,12 @@ func (s *EdgeCasesNSumTestSuite) TestNSum_SamePairs() {
 
 func (s *EdgeCasesNSumTestSuite) TestNSum_LargeDifference() {
 	// Test pairs with large differences
+	// Since NSum is now symmetric, {0, 1000000} and {1000000, 0} produce the same hash
 	testCases := []struct {
 		from, to uint64
 	}{
 		{0, 1000000},
 		{1, 1000001},
-		{1000000, 0},
-		{1000001, 1},
 	}
 
 	hashes := make(map[uint64]bool)
@@ -234,6 +239,10 @@ func (s *EdgeCasesNSumTestSuite) TestNSum_LargeDifference() {
 
 	assert.Equal(s.T(), len(testCases), len(hashes),
 		"pairs with large differences should produce unique hashes")
+
+	// Verify symmetry works
+	assert.Equal(s.T(), NSum(0, 1000000), NSum(1000000, 0))
+	assert.Equal(s.T(), NSum(1, 1000001), NSum(1000001, 1))
 }
 
 func (s *EdgeCasesNSumTestSuite) TestNSum_PowersOfTwo() {
@@ -350,14 +359,14 @@ func ExampleNSum() {
 	edgeHash2 := NSum(nodeA, nodeB)
 	fmt.Printf("Consistent: %t\n", edgeHash == edgeHash2)
 
-	// Order matters
+	// NSum is symmetric - order does not matter
 	reverseHash := NSum(nodeB, nodeA)
-	fmt.Printf("Order matters: %t\n", edgeHash != reverseHash)
+	fmt.Printf("Symmetric: %t\n", edgeHash == reverseHash)
 
 	// Output:
 	// Edge hash: 11400714819323206848
 	// Consistent: true
-	// Order matters: true
+	// Symmetric: true
 }
 
 // Test suite runners

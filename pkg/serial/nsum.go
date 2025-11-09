@@ -63,5 +63,8 @@ func hashcode(base, val uint64) uint64 {
 //	// The same inputs always produce the same hash
 //	assert.Equal(t, NSum(nodeA, nodeB), NSum(nodeA, nodeB))
 func NSum(from, to uint64) uint64 {
+	if from > to {
+		from, to = to, from
+	}
 	return hashcode(from, to)
 }

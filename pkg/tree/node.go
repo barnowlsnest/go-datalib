@@ -1,59 +1,122 @@
 package tree
 
 import (
+	"cmp"
+
 	"github.com/barnowlsnest/go-datalib/pkg/node"
+	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
-type Node[T comparable] struct {
-	*node.Node
-	value    T
-	level    int
-	children *NodeChildren[T]
-}
-
-func NewNode[T comparable](id uint64, value T) *Node[T] {
-	return NewNodeWithChildren(id, value, nil)
-}
-
-func NewNodeWithChildren[T comparable](id uint64, value T, nodes *NodeChildren[T]) *Node[T] {
-	return &Node[T]{
-		Node:     node.ID(id),
-		value:    value,
-		children: nodes,
-		level:    -1,
+type (
+	NodeValue[T cmp.Ordered] struct {
+		node *node.Node
+		val  T
 	}
+
+	NodeProps[T cmp.Ordered] struct {
+		ID    uint64
+		Value T
+	}
+)
+
+func newNodeValue[T cmp.Ordered](n *node.Node, v T) *NodeValue[T] {
+	return &NodeValue[T]{n, v}
 }
 
-func (n *Node[T]) Value() T {
-	return n.value
+func NewNode[T cmp.Ordered](id uint64) *NodeValue[T] {
+	var val T
+	return newNodeValue(node.ID(id), val)
 }
 
-func (n *Node[T]) Level() int {
-	return n.level
+func NewNodeValue[T cmp.Ordered](id uint64, value T) *NodeValue[T] {
+	return newNodeValue(node.ID(id), value)
 }
 
-func (n *Node[T]) IsRoot() bool {
-	return n.level == 0 && n.Prev() == nil
+func Node[T cmp.Ordered](id uint64, value T) *NodeValue[T] {
+	return NewNodeValue(id, value)
 }
 
-func (n *Node[T]) BeholdRoot() {
-	n.WithPrev(nil)
-	n.level = 0
+func (n *NodeValue[T]) Props() (NodeProps[T], error) {
+	if n.node == nil {
+		return NodeProps[T]{}, ErrNil
+	}
+
+	return NodeProps[T]{n.node.ID(), n.val}, nil
 }
 
-func (n *Node[T]) WithParent(parent *Node[T]) {
+func (n *NodeValue[T]) WithValue(newVal T) {
+	n.val = newVal
+}
+
+func (n *NodeValue[T]) WithParent(parent *NodeValue[T]) (uint64, error) {
+	if n.node == nil {
+		return 0, ErrNil
+	}
+
 	if parent == nil {
+		return 0, ErrParentNil
+	}
+
+	n.node.WithPrev(parent.node)
+
+	return serial.NSum(parent.node.ID(), n.node.ID()), nil
+}
+
+func (n *NodeValue[T]) HasParent() bool {
+	if n.node == nil {
+		return false
+	}
+
+	return n.node.Prev() != nil
+}
+
+func (n *NodeValue[T]) IsChildOf(parent *NodeValue[T]) bool {
+	if n.node == nil {
+		return false
+	}
+
+	if parent == nil {
+		return false
+	}
+
+	if parent.node == nil {
+		return false
+	}
+
+	return n.node.Prev() == parent.node
+}
+
+func (n *NodeValue[T]) UnlinkParent() {
+	if n.node == nil {
 		return
 	}
 
-	n.WithPrev(parent.Node)
-	n.level = parent.level + 1
+	n.node.WithPrev(nil)
 }
 
-func (n *Node[T]) WithChildren(children *NodeChildren[T]) {
-	n.children = children
-}
+func (n *NodeValue[T]) Equal(other *NodeValue[T]) bool {
+	if n == nil {
+		return other == nil
+	}
 
-func (n *Node[T]) Children() *NodeChildren[T] {
-	return n.children
+	if other == nil {
+		return false
+	}
+
+	if n.val != other.val {
+		return false
+	}
+
+	switch {
+	case n.val != other.val:
+		return false
+	case n.node != nil && other.node == nil:
+		return false
+	case n.node == nil && other.node != nil:
+		return false
+	case n.node == nil && other.node == nil:
+		return true
+	default:
+		return n.node.ID() == other.node.ID()
+	}
 }
