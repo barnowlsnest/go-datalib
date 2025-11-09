@@ -181,6 +181,7 @@ func (s *NodeValueTestSuite) TestNodeValue_Equal() {
 		s.Run(tc.name, func() {
 			if tc.shouldEqual {
 				s.Require().True(tc.shouldEqual, tc.n1.Equal(tc.n2))
+				s.Require().True(tc.shouldEqual, tc.n2.Equal(tc.n1))
 			} else {
 				s.Require().False(tc.shouldEqual, tc.n1.Equal(tc.n2))
 			}

@@ -16,8 +16,8 @@ const (
 type (
 	Relation[T cmp.Ordered] struct {
 		hash   uint64
-		parent NodeProps[T]
-		child  NodeProps[T]
+		parent *NodeProps[T]
+		child  *NodeProps[T]
 	}
 
 	RelationProps[T cmp.Ordered] struct {
@@ -27,23 +27,55 @@ type (
 	}
 )
 
-func NewRelation[T cmp.Ordered](parent, child NodeProps[T]) *Relation[T] {
-	return &Relation[T]{
-		hash:   serial.NSum(parent.ID, child.ID),
-		parent: parent,
-		child:  child,
+func NewRelation[T cmp.Ordered](parent, child *NodeValue[T]) (*Relation[T], error) {
+	if parent == nil {
+		return nil, ErrParentNil
 	}
+
+	if child == nil {
+		return nil, ErrNil
+	}
+
+	var (
+		p, c NodeProps[T]
+		err  error
+	)
+
+	p, err = parent.Props()
+	if err != nil {
+		return nil, err
+	}
+
+	c, err = child.Props()
+	if err != nil {
+		return nil, err
+	}
+
+	return &Relation[T]{
+		hash:   serial.NSum(p.ID, c.ID),
+		parent: &p,
+		child:  &c,
+	}, nil
 }
 
-func Rel[T cmp.Ordered](parent, child NodeProps[T]) *Relation[T] {
+func Rel[T cmp.Ordered](parent, child *NodeValue[T]) (*Relation[T], error) {
 	return NewRelation(parent, child)
 }
 
 func (r *Relation[T]) Props() RelationProps[T] {
+	var parentID, childID uint64
+	if r.parent != nil {
+		parentID = r.parent.ID
+	}
+
+	if r.child != nil {
+		childID = r.child.ID
+	}
+
 	return RelationProps[T]{
 		Hash:     r.hash,
-		ParentID: r.parent.ID,
-		ChildID:  r.child.ID,
+		ParentID: parentID,
+		ChildID:  childID,
 	}
 }
 
