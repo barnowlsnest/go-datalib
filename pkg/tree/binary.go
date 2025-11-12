@@ -18,9 +18,9 @@ type BinaryNode[T cmp.Ordered] struct {
 	right *BinaryNode[T]
 }
 
-func NewBinaryNode[T cmp.Ordered](level int, nodeValue NodeValue[T], left, right *BinaryNode[T]) *BinaryNode[T] {
+func NewBinaryNode[T cmp.Ordered](level int, nodeValue *NodeValue[T], left, right *BinaryNode[T]) *BinaryNode[T] {
 	return &BinaryNode[T]{
-		NodeValue: &nodeValue,
+		NodeValue: nodeValue,
 		left:      left,
 		right:     right,
 		level:     level,
