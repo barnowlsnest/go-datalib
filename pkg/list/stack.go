@@ -1,7 +1,6 @@
-package stack
+package list
 
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/list"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
@@ -27,10 +26,10 @@ import (
 type Stack struct {
 	// list is the internal LinkedList used to store stack elements.
 	// Elements are pushed and popped from the tail (top of stack).
-	list *list.LinkedList
+	list *LinkedList
 }
 
-// New creates a new empty Stack.
+// NewStack creates a new empty Stack.
 //
 // The returned stack is ready for use and has zero size.
 //
@@ -42,9 +41,9 @@ type Stack struct {
 //	s := New()
 //	s.Push(node.New(1, nil, nil))
 //	fmt.Printf("Stack size: %d", s.Size()) // Output: Stack size: 1
-func New() *Stack {
+func NewStack() *Stack {
 	return &Stack{
-		list: list.New(),
+		list: New(),
 	}
 }
 

@@ -14,7 +14,7 @@ type BSTTestSuite struct {
 }
 
 func (s *BSTTestSuite) SetupTest() {
-	s.bst = New[int]()
+	s.bst = NewBST[int]()
 }
 
 // buildTree is a helper to build a tree from values
@@ -91,7 +91,7 @@ func (s *BSTTestSuite) TestInsert() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			bst := New[int]()
+			bst := NewBST[int]()
 			for i, v := range tc.insertValues {
 				bst.Insert(NewNodeValue(uint64(i+1), v))
 			}
@@ -116,7 +116,7 @@ func (s *BSTTestSuite) TestInsertEdgeCases() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			bst := New[int]()
+			bst := NewBST[int]()
 			inserted := bst.Insert(tc.value)
 			assert.Equal(s.T(), tc.shouldInsert, inserted)
 		})
@@ -246,7 +246,7 @@ func (s *BSTTestSuite) TestDelete() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			bst := New[int]()
+			bst := NewBST[int]()
 			for i, v := range tc.treeValues {
 				bst.Insert(NewNodeValue(uint64(i+1), v))
 			}
@@ -326,22 +326,22 @@ func (s *BSTTestSuite) TestTraversalEdgeCases() {
 	}{
 		{
 			name:        "InOrder on empty tree",
-			setup:       func() *BST[int] { return New[int]() },
+			setup:       func() *BST[int] { return NewBST[int]() },
 			traversalFn: func(bst *BST[int], visit func(*BinaryNode[int])) { bst.InOrder(visit) },
 		},
 		{
 			name:        "PreOrder on empty tree",
-			setup:       func() *BST[int] { return New[int]() },
+			setup:       func() *BST[int] { return NewBST[int]() },
 			traversalFn: func(bst *BST[int], visit func(*BinaryNode[int])) { bst.PreOrder(visit) },
 		},
 		{
 			name:        "PostOrder on empty tree",
-			setup:       func() *BST[int] { return New[int]() },
+			setup:       func() *BST[int] { return NewBST[int]() },
 			traversalFn: func(bst *BST[int], visit func(*BinaryNode[int])) { bst.PostOrder(visit) },
 		},
 		{
 			name:        "LevelOrder on empty tree",
-			setup:       func() *BST[int] { return New[int]() },
+			setup:       func() *BST[int] { return NewBST[int]() },
 			traversalFn: func(bst *BST[int], visit func(*BinaryNode[int])) { bst.LevelOrder(visit) },
 		},
 	}
@@ -418,7 +418,7 @@ func (s *BSTTestSuite) TestMinMaxHeight() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			bst := New[int]()
+			bst := NewBST[int]()
 			for i, v := range tc.treeValues {
 				bst.Insert(NewNodeValue(uint64(i+1), v))
 			}
@@ -541,7 +541,7 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			bst := New[int]()
+			bst := NewBST[int]()
 			tc.operations(bst)
 			tc.verify(s.T(), bst)
 		})
@@ -550,7 +550,7 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 
 func (s *BSTTestSuite) TestDifferentTypes() {
 	s.Run("string type", func() {
-		bst := New[string]()
+		bst := NewBST[string]()
 		words := []string{"dog", "cat", "elephant", "ant"}
 		for i, w := range words {
 			bst.Insert(NewNodeValue(uint64(i+1), w))
@@ -570,7 +570,7 @@ func (s *BSTTestSuite) TestDifferentTypes() {
 	})
 
 	s.Run("float64 type", func() {
-		bst := New[float64]()
+		bst := NewBST[float64]()
 		nums := []float64{3.14, 2.71, 1.41, 1.73}
 		for i, n := range nums {
 			bst.Insert(NewNodeValue(uint64(i+1), n))

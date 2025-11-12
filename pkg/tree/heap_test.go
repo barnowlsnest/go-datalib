@@ -1,4 +1,4 @@
-package heap
+package tree
 
 import (
 	"testing"
@@ -191,7 +191,7 @@ type Person struct {
 
 func (s *CustomComparisonTestSuite) TestCustomComparison_ByAge() {
 	// Min-heap by age
-	h := New(func(a, b Person) bool {
+	h := NewHeap(func(a, b Person) bool {
 		return a.Age < b.Age
 	})
 
@@ -208,7 +208,7 @@ func (s *CustomComparisonTestSuite) TestCustomComparison_ByAge() {
 
 func (s *CustomComparisonTestSuite) TestCustomComparison_ByName() {
 	// Min-heap by name (alphabetical)
-	h := New(func(a, b Person) bool {
+	h := NewHeap(func(a, b Person) bool {
 		return a.Name < b.Name
 	})
 
@@ -224,7 +224,7 @@ func (s *CustomComparisonTestSuite) TestCustomComparison_ByName() {
 
 func (s *CustomComparisonTestSuite) TestCustomComparison_ReverseOrder() {
 	// Max-heap for strings (reverse alphabetical)
-	h := New(func(a, b string) bool {
+	h := NewHeap(func(a, b string) bool {
 		return a > b
 	})
 
@@ -246,7 +246,7 @@ type FromSliceTestSuite struct {
 func (s *FromSliceTestSuite) TestFromSlice_CreatesValidMinHeap() {
 	input := []int{5, 3, 7, 1, 9, 2, 8}
 
-	h := FromSlice(input, func(a, b int) bool { return a < b })
+	h := HeapFromSlice(input, func(a, b int) bool { return a < b })
 
 	s.Require().Equal(7, h.Size())
 
@@ -265,7 +265,7 @@ func (s *FromSliceTestSuite) TestFromSlice_DoesNotModifyOriginal() {
 	original := make([]int, len(input))
 	copy(original, input)
 
-	h := FromSlice(input, func(a, b int) bool { return a < b })
+	h := HeapFromSlice(input, func(a, b int) bool { return a < b })
 
 	// Modify heap
 	h.Pop()
@@ -276,14 +276,14 @@ func (s *FromSliceTestSuite) TestFromSlice_DoesNotModifyOriginal() {
 }
 
 func (s *FromSliceTestSuite) TestFromSlice_EmptySlice() {
-	h := FromSlice([]int{}, func(a, b int) bool { return a < b })
+	h := HeapFromSlice([]int{}, func(a, b int) bool { return a < b })
 
 	s.Require().True(h.IsEmpty())
 	s.Require().Equal(0, h.Size())
 }
 
 func (s *FromSliceTestSuite) TestFromSlice_SingleElement() {
-	h := FromSlice([]int{42}, func(a, b int) bool { return a < b })
+	h := HeapFromSlice([]int{42}, func(a, b int) bool { return a < b })
 
 	s.Require().Equal(1, h.Size())
 
@@ -355,7 +355,7 @@ func (s *HeapOperationsTestSuite) TestNewWithCapacity_PreallocatesSpace() {
 }
 
 // EdgeCasesTestSuite tests edge cases and boundary conditions
-type EdgeCasesTestSuite struct {
+type EdgeCasesHeapTestSuite struct {
 	suite.Suite
 }
 
@@ -477,7 +477,7 @@ func (s *EdgeCasesTestSuite) TestLargeHeap() {
 }
 
 // TypesTestSuite tests heap with different types
-type TypesTestSuite struct {
+type HeapTypesTestSuite struct {
 	suite.Suite
 }
 
@@ -538,10 +538,10 @@ func TestHeapOperationsTestSuite(t *testing.T) {
 	suite.Run(t, new(HeapOperationsTestSuite))
 }
 
-func TestEdgeCasesTestSuite(t *testing.T) {
-	suite.Run(t, new(EdgeCasesTestSuite))
+func TestEdgeCasesHeapTestSuite(t *testing.T) {
+	suite.Run(t, new(EdgeCasesHeapTestSuite))
 }
 
-func TestTypesTestSuite(t *testing.T) {
+func TestTypesHeapTestSuite(t *testing.T) {
 	suite.Run(t, new(TypesTestSuite))
 }

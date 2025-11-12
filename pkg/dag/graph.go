@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/barnowlsnest/go-datalib/pkg/list"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
-	"github.com/barnowlsnest/go-datalib/pkg/queue"
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
@@ -231,7 +231,7 @@ func (g *Graph) IsAcyclic() <-chan bool {
 	go func() {
 		defer close(ch)
 
-		q := queue.New()
+		q := list.New()
 		in := make(map[NodeID]int)
 
 		// Collect all nodes from the graph (both with outgoing and incoming edges)

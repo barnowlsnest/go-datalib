@@ -1,4 +1,4 @@
-package fenwick
+package tree
 
 import (
 	"testing"
@@ -12,7 +12,7 @@ type ConstructorTestSuite struct {
 }
 
 func (s *ConstructorTestSuite) TestNew_ValidSize() {
-	ft := New[int](10)
+	ft := NewFenwick[int](10)
 
 	s.Require().NotNil(ft)
 	s.Require().Equal(10, ft.Size())
@@ -25,14 +25,14 @@ func (s *ConstructorTestSuite) TestNew_ValidSize() {
 }
 
 func (s *ConstructorTestSuite) TestNew_ZeroSize() {
-	ft := New[int](0)
+	ft := NewFenwick[int](0)
 
 	s.Require().NotNil(ft)
 	s.Require().Equal(0, ft.Size())
 }
 
 func (s *ConstructorTestSuite) TestNew_NegativeSize() {
-	ft := New[int](-5)
+	ft := NewFenwick[int](-5)
 
 	s.Require().NotNil(ft)
 	s.Require().Equal(0, ft.Size())
@@ -46,28 +46,28 @@ func (s *ConstructorTestSuite) TestNew_DifferentTypes() {
 		{
 			name: "int",
 			test: func() {
-				ft := New[int](5)
+				ft := NewFenwick[int](5)
 				s.Require().Equal(5, ft.Size())
 			},
 		},
 		{
 			name: "int64",
 			test: func() {
-				ft := New[int64](5)
+				ft := NewFenwick[int64](5)
 				s.Require().Equal(5, ft.Size())
 			},
 		},
 		{
 			name: "float64",
 			test: func() {
-				ft := New[float64](5)
+				ft := NewFenwick[float64](5)
 				s.Require().Equal(5, ft.Size())
 			},
 		},
 		{
 			name: "uint",
 			test: func() {
-				ft := New[uint](5)
+				ft := NewFenwick[uint](5)
 				s.Require().Equal(5, ft.Size())
 			},
 		},
@@ -110,7 +110,7 @@ type UpdateTestSuite struct {
 }
 
 func (s *UpdateTestSuite) TestUpdate_SingleElement() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Update(3, 10)
 
@@ -121,7 +121,7 @@ func (s *UpdateTestSuite) TestUpdate_SingleElement() {
 }
 
 func (s *UpdateTestSuite) TestUpdate_MultipleElements() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Update(1, 5)
 	ft.Update(2, 3)
@@ -137,7 +137,7 @@ func (s *UpdateTestSuite) TestUpdate_MultipleElements() {
 }
 
 func (s *UpdateTestSuite) TestUpdate_SameIndexMultipleTimes() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Update(3, 10)
 	ft.Update(3, 5)
@@ -148,7 +148,7 @@ func (s *UpdateTestSuite) TestUpdate_SameIndexMultipleTimes() {
 }
 
 func (s *UpdateTestSuite) TestUpdate_NegativeValues() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Update(2, 10)
 	ft.Update(2, -5)
@@ -157,7 +157,7 @@ func (s *UpdateTestSuite) TestUpdate_NegativeValues() {
 }
 
 func (s *UpdateTestSuite) TestUpdate_OutOfBounds() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	// These should be silently ignored
 	ft.Update(0, 10)
@@ -172,7 +172,7 @@ func (s *UpdateTestSuite) TestUpdate_OutOfBounds() {
 }
 
 func (s *UpdateTestSuite) TestUpdate_Float64() {
-	ft := New[float64](3)
+	ft := NewFenwick[float64](3)
 
 	ft.Update(1, 3.14)
 	ft.Update(2, 2.71)
@@ -209,7 +209,7 @@ func (s *QueryTestSuite) TestQuery_PrefixSum() {
 }
 
 func (s *QueryTestSuite) TestQuery_AfterUpdates() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Update(1, 3)
 	ft.Update(3, 5)
@@ -311,7 +311,7 @@ type SetAndGetTestSuite struct {
 }
 
 func (s *SetAndGetTestSuite) TestSet_NewValue() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	ft.Set(3, 42)
 
@@ -343,7 +343,7 @@ func (s *SetAndGetTestSuite) TestSet_MultipleOverwrites() {
 }
 
 func (s *SetAndGetTestSuite) TestSet_OutOfBounds() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	// These should be silently ignored
 	ft.Set(0, 10)
@@ -357,7 +357,7 @@ func (s *SetAndGetTestSuite) TestSet_OutOfBounds() {
 }
 
 func (s *SetAndGetTestSuite) TestGet_AfterMultipleUpdates() {
-	ft := New[int](3)
+	ft := NewFenwick[int](3)
 
 	ft.Update(2, 5)
 	ft.Update(2, 3)
@@ -416,7 +416,7 @@ func (s *UtilityTestSuite) TestToSlice_AfterUpdates() {
 }
 
 func (s *UtilityTestSuite) TestToSlice_EmptyTree() {
-	ft := New[int](0)
+	ft := NewFenwick[int](0)
 
 	result := ft.ToSlice()
 
@@ -444,7 +444,7 @@ func (s *UtilityTestSuite) TestSize() {
 	}
 
 	for _, tc := range testCases {
-		ft := New[int](tc.size)
+		ft := NewFenwick[int](tc.size)
 		s.Require().Equal(tc.size, ft.Size())
 	}
 }
@@ -455,7 +455,7 @@ type EdgeCasesTestSuite struct {
 }
 
 func (s *EdgeCasesTestSuite) TestSingleElementTree() {
-	ft := New[int](1)
+	ft := NewFenwick[int](1)
 
 	ft.Update(1, 42)
 
@@ -465,7 +465,7 @@ func (s *EdgeCasesTestSuite) TestSingleElementTree() {
 }
 
 func (s *EdgeCasesTestSuite) TestAllZeros() {
-	ft := New[int](10)
+	ft := NewFenwick[int](10)
 
 	for i := 1; i <= 10; i++ {
 		s.Require().Equal(0, ft.Get(i))
@@ -476,7 +476,7 @@ func (s *EdgeCasesTestSuite) TestAllZeros() {
 }
 
 func (s *EdgeCasesTestSuite) TestAllSameValue() {
-	ft := New[int](5)
+	ft := NewFenwick[int](5)
 
 	for i := 1; i <= 5; i++ {
 		ft.Update(i, 7)
@@ -490,7 +490,7 @@ func (s *EdgeCasesTestSuite) TestAllSameValue() {
 }
 
 func (s *EdgeCasesTestSuite) TestAlternatingValues() {
-	ft := New[int](10)
+	ft := NewFenwick[int](10)
 
 	for i := 1; i <= 10; i++ {
 		if i%2 == 0 {
@@ -505,7 +505,7 @@ func (s *EdgeCasesTestSuite) TestAlternatingValues() {
 }
 
 func (s *EdgeCasesTestSuite) TestLargeTree() {
-	ft := New[int](10000)
+	ft := NewFenwick[int](10000)
 
 	// Update every 100th element
 	for i := 100; i <= 10000; i += 100 {
@@ -528,7 +528,7 @@ func (s *EdgeCasesTestSuite) TestPowerOfTwo() {
 	sizes := []int{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, size := range sizes {
-		ft := New[int](size)
+		ft := NewFenwick[int](size)
 		ft.Update(size, size)
 		s.Require().Equal(size, ft.Get(size))
 	}
@@ -540,7 +540,7 @@ type ComplexOperationsTestSuite struct {
 }
 
 func (s *ComplexOperationsTestSuite) TestMixedOperations() {
-	ft := New[int](10)
+	ft := NewFenwick[int](10)
 
 	// Initialize with some values
 	for i := 1; i <= 10; i++ {
@@ -599,12 +599,12 @@ func (s *ComplexOperationsTestSuite) TestSequentialRangeQueries() {
 }
 
 // TypesTestSuite tests different numeric types
-type TypesTestSuite struct {
+type TypesHeapTestSuite struct {
 	suite.Suite
 }
 
-func (s *TypesTestSuite) TestInt32() {
-	ft := New[int32](5)
+func (s *TypesHeapTestSuite) TestInt32() {
+	ft := NewFenwick[int32](5)
 
 	ft.Update(1, 100)
 	ft.Update(3, 200)
@@ -615,8 +615,8 @@ func (s *TypesTestSuite) TestInt32() {
 	s.Require().Equal(int32(600), ft.Query(5))
 }
 
-func (s *TypesTestSuite) TestInt64() {
-	ft := New[int64](3)
+func (s *TypesHeapTestSuite) TestInt64() {
+	ft := NewFenwick[int64](3)
 
 	ft.Update(1, 1000000000000)
 	ft.Update(2, 2000000000000)
@@ -625,8 +625,8 @@ func (s *TypesTestSuite) TestInt64() {
 	s.Require().Equal(int64(6000000000000), ft.Query(3))
 }
 
-func (s *TypesTestSuite) TestFloat32() {
-	ft := New[float32](3)
+func (s *TypesHeapTestSuite) TestFloat32() {
+	ft := NewFenwick[float32](3)
 
 	ft.Update(1, 3.14)
 	ft.Update(2, 2.71)
@@ -636,8 +636,8 @@ func (s *TypesTestSuite) TestFloat32() {
 	s.Require().InDelta(float32(7.26), ft.Query(3), 0.01)
 }
 
-func (s *TypesTestSuite) TestUint() {
-	ft := New[uint](5)
+func (s *TypesHeapTestSuite) TestUint() {
+	ft := NewFenwick[uint](5)
 
 	for i := 1; i <= 5; i++ {
 		ft.Update(i, uint(i*10))
@@ -680,5 +680,5 @@ func TestComplexOperationsTestSuite(t *testing.T) {
 }
 
 func TestTypesTestSuite(t *testing.T) {
-	suite.Run(t, new(TypesTestSuite))
+	suite.Run(t, new(TypesHeapTestSuite))
 }

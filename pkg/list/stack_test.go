@@ -1,4 +1,4 @@
-package stack
+package list
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 
 func TestNewStack(t *testing.T) {
 	t.Run("should create empty stack", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		assert.NotNil(t, s)
 		assert.Equal(t, 0, s.Size())
@@ -20,7 +20,7 @@ func TestNewStack(t *testing.T) {
 
 func TestPush(t *testing.T) {
 	t.Run("should push to empty stack", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		n := node.New(1, nil, nil)
 
 		s.Push(n)
@@ -30,7 +30,7 @@ func TestPush(t *testing.T) {
 	})
 
 	t.Run("should push multiple elements", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -46,7 +46,7 @@ func TestPush(t *testing.T) {
 
 func TestPop(t *testing.T) {
 	t.Run("should return nil when popping from empty stack", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		result := s.Pop()
 
@@ -56,7 +56,7 @@ func TestPop(t *testing.T) {
 	})
 
 	t.Run("should pop from stack with one element", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		n := node.New(1, nil, nil)
 		s.Push(n)
 
@@ -69,7 +69,7 @@ func TestPop(t *testing.T) {
 	})
 
 	t.Run("should pop in LIFO order", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -96,7 +96,7 @@ func TestPop(t *testing.T) {
 
 func TestPeek(t *testing.T) {
 	t.Run("should return empty node when peeking empty stack", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		result, ok := s.Peek()
 
@@ -106,7 +106,7 @@ func TestPeek(t *testing.T) {
 	})
 
 	t.Run("should peek top element without removing it", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		n := node.New(1, nil, nil)
 		s.Push(n)
 
@@ -118,7 +118,7 @@ func TestPeek(t *testing.T) {
 	})
 
 	t.Run("should peek correct element after multiple pushes", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -135,7 +135,7 @@ func TestPeek(t *testing.T) {
 	})
 
 	t.Run("should peek correct element after pop", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 
@@ -151,22 +151,22 @@ func TestPeek(t *testing.T) {
 	})
 }
 
-func TestIsEmpty(t *testing.T) {
+func TestStack_IsEmpty(t *testing.T) {
 	t.Run("should return true for new stack", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		assert.True(t, s.IsEmpty())
 	})
 
 	t.Run("should return false after push", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		s.Push(node.New(1, nil, nil))
 
 		assert.False(t, s.IsEmpty())
 	})
 
 	t.Run("should return true after push and pop", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 		s.Push(node.New(1, nil, nil))
 		s.Pop()
 
@@ -176,7 +176,7 @@ func TestIsEmpty(t *testing.T) {
 
 func TestStackCombinedOperations(t *testing.T) {
 	t.Run("should handle push, pop, peek in sequence", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		// Push elements
 		s.Push(node.New(1, nil, nil))
@@ -210,7 +210,7 @@ func TestStackCombinedOperations(t *testing.T) {
 	})
 
 	t.Run("should handle multiple push and pop cycles", func(t *testing.T) {
-		s := New()
+		s := NewStack()
 
 		// First cycle
 		s.Push(node.New(1, nil, nil))

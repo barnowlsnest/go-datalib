@@ -1,4 +1,4 @@
-package heap
+package tree
 
 import (
 	"cmp"
@@ -17,7 +17,7 @@ type Heap[T any] struct {
 	less func(T, T) bool // Comparison function: less(a, b) returns true if a should be higher in heap than b
 }
 
-// New creates a new empty heap with the given comparison function.
+// NewHeap creates a new empty heap with the given comparison function.
 // For a min-heap, pass a "less than" function: func(a, b T) bool { return a < b }
 // For a max-heap, pass a "greater than" function: func(a, b T) bool { return a > b }
 //
@@ -28,7 +28,7 @@ type Heap[T any] struct {
 // Example max-heap:
 //
 //	h := heap.New(func(a, b int) bool { return a > b })
-func New[T any](less func(T, T) bool) *Heap[T] {
+func NewHeap[T any](less func(T, T) bool) *Heap[T] {
 	return &Heap[T]{
 		data: make([]T, 0),
 		less: less,
@@ -42,7 +42,7 @@ func New[T any](less func(T, T) bool) *Heap[T] {
 //
 //	h := heap.NewMin[int]()
 func NewMin[T cmp.Ordered]() *Heap[T] {
-	return New(func(a, b T) bool { return a < b })
+	return NewHeap(func(a, b T) bool { return a < b })
 }
 
 // NewMax creates a new max-heap for ordered types (types that support <, >, etc).
@@ -52,7 +52,7 @@ func NewMin[T cmp.Ordered]() *Heap[T] {
 //
 //	h := heap.NewMax[int]()
 func NewMax[T cmp.Ordered]() *Heap[T] {
-	return New(func(a, b T) bool { return a > b })
+	return NewHeap(func(a, b T) bool { return a > b })
 }
 
 // NewWithCapacity creates a new heap with pre-allocated capacity.
@@ -64,11 +64,11 @@ func NewWithCapacity[T any](less func(T, T) bool, capacity int) *Heap[T] {
 	}
 }
 
-// FromSlice creates a heap from an existing slice using heapify.
+// HeapFromSlice creates a heap from an existing slice using heapify.
 // This is more efficient than inserting elements one by one: O(n) vs O(n log n).
 //
 // The input slice is copied, so modifications to the heap won't affect the original slice.
-func FromSlice[T any](slice []T, less func(T, T) bool) *Heap[T] {
+func HeapFromSlice[T any](slice []T, less func(T, T) bool) *Heap[T] {
 	data := make([]T, len(slice))
 	copy(data, slice)
 

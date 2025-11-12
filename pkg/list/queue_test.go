@@ -1,4 +1,4 @@
-package queue
+package list
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ import (
 
 func TestNewQueue(t *testing.T) {
 	t.Run("should create empty queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		assert.NotNil(t, q)
 		assert.Equal(t, 0, q.Size())
@@ -20,7 +20,7 @@ func TestNewQueue(t *testing.T) {
 
 func TestEnqueue(t *testing.T) {
 	t.Run("should enqueue to empty queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		n := node.New(1, nil, nil)
 
 		q.Enqueue(n)
@@ -30,7 +30,7 @@ func TestEnqueue(t *testing.T) {
 	})
 
 	t.Run("should enqueue multiple elements", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -46,7 +46,7 @@ func TestEnqueue(t *testing.T) {
 
 func TestDequeue(t *testing.T) {
 	t.Run("should return nil when dequeuing from empty queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		result := q.Dequeue()
 
@@ -56,7 +56,7 @@ func TestDequeue(t *testing.T) {
 	})
 
 	t.Run("should dequeue from queue with one element", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		n := node.New(1, nil, nil)
 		q.Enqueue(n)
 
@@ -69,7 +69,7 @@ func TestDequeue(t *testing.T) {
 	})
 
 	t.Run("should dequeue in FIFO order", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -96,7 +96,7 @@ func TestDequeue(t *testing.T) {
 
 func TestPeekFront(t *testing.T) {
 	t.Run("should return empty node when peeking empty queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		result, ok := q.PeekFront()
 
@@ -106,7 +106,7 @@ func TestPeekFront(t *testing.T) {
 	})
 
 	t.Run("should peek front element without removing it", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		n := node.New(1, nil, nil)
 		q.Enqueue(n)
 
@@ -118,7 +118,7 @@ func TestPeekFront(t *testing.T) {
 	})
 
 	t.Run("should peek correct front element after multiple enqueues", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -135,7 +135,7 @@ func TestPeekFront(t *testing.T) {
 	})
 
 	t.Run("should peek correct front element after dequeue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 
@@ -153,7 +153,7 @@ func TestPeekFront(t *testing.T) {
 
 func TestPeekRear(t *testing.T) {
 	t.Run("should return empty node when peeking empty queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		result, ok := q.PeekRear()
 
@@ -163,7 +163,7 @@ func TestPeekRear(t *testing.T) {
 	})
 
 	t.Run("should peek rear element without removing it", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		n := node.New(1, nil, nil)
 		q.Enqueue(n)
 
@@ -175,7 +175,7 @@ func TestPeekRear(t *testing.T) {
 	})
 
 	t.Run("should peek correct rear element after multiple enqueues", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 		node3 := node.New(3, nil, nil)
@@ -192,7 +192,7 @@ func TestPeekRear(t *testing.T) {
 	})
 
 	t.Run("should peek correct rear element after enqueue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		node1 := node.New(1, nil, nil)
 		node2 := node.New(2, nil, nil)
 
@@ -207,22 +207,22 @@ func TestPeekRear(t *testing.T) {
 	})
 }
 
-func TestIsEmpty(t *testing.T) {
+func TestQueue_IsEmpty(t *testing.T) {
 	t.Run("should return true for new queue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		assert.True(t, q.IsEmpty())
 	})
 
 	t.Run("should return false after enqueue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		q.Enqueue(node.New(1, nil, nil))
 
 		assert.False(t, q.IsEmpty())
 	})
 
 	t.Run("should return true after enqueue and dequeue", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 		q.Enqueue(node.New(1, nil, nil))
 		q.Dequeue()
 
@@ -232,7 +232,7 @@ func TestIsEmpty(t *testing.T) {
 
 func TestQueueCombinedOperations(t *testing.T) {
 	t.Run("should handle enqueue, dequeue, peek in sequence", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		// Enqueue elements
 		q.Enqueue(node.New(1, nil, nil))
@@ -274,7 +274,7 @@ func TestQueueCombinedOperations(t *testing.T) {
 	})
 
 	t.Run("should handle multiple enqueue and dequeue cycles", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		// First cycle
 		q.Enqueue(node.New(1, nil, nil))
@@ -292,7 +292,7 @@ func TestQueueCombinedOperations(t *testing.T) {
 	})
 
 	t.Run("should maintain FIFO with interleaved operations", func(t *testing.T) {
-		q := New()
+		q := NewQueue()
 
 		q.Enqueue(node.New(1, nil, nil))
 		q.Enqueue(node.New(2, nil, nil))

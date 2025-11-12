@@ -3,9 +3,8 @@ package tree
 import (
 	"cmp"
 
+	"github.com/barnowlsnest/go-datalib/pkg/list"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
-	"github.com/barnowlsnest/go-datalib/pkg/queue"
-	"github.com/barnowlsnest/go-datalib/pkg/stack"
 )
 
 // BST (Binary Search Tree) is a production-ready, iterative implementation
@@ -31,7 +30,7 @@ type BST[T cmp.Ordered] struct {
 	size int
 }
 
-// New creates a new empty Binary Search Tree.
+// NewBST creates a new empty Binary Search Tree.
 //
 // Returns:
 //   - A new empty BST instance ready for use
@@ -42,7 +41,7 @@ type BST[T cmp.Ordered] struct {
 //	bst.Insert(NewNodeValue(1, 50))
 //	bst.Insert(NewNodeValue(2, 30))
 //	bst.Insert(NewNodeValue(3, 70))
-func New[T cmp.Ordered]() *BST[T] {
+func NewBST[T cmp.Ordered]() *BST[T] {
 	return &BST[T]{
 		root: nil,
 		size: 0,
@@ -379,7 +378,7 @@ func (bst *BST[T]) InOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s := stack.New()
+	s := list.New()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	current := bst.root
@@ -431,7 +430,7 @@ func (bst *BST[T]) PreOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s := stack.New()
+	s := list.New()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToStack(s, bst.root, nodeMap)
@@ -468,8 +467,8 @@ func (bst *BST[T]) PostOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s1 := stack.New()
-	s2 := stack.New()
+	s1 := list.New()
+	s2 := list.New()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToStack(s1, bst.root, nodeMap)
@@ -525,7 +524,7 @@ func (bst *BST[T]) LevelOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	q := queue.New()
+	q := list.New()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToQueue(q, bst.root, nodeMap)
@@ -568,7 +567,7 @@ func (bst *BST[T]) Height() int {
 		return -1
 	}
 
-	q := queue.New()
+	q := list.New()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToQueue(q, bst.root, nodeMap)
@@ -633,7 +632,7 @@ func (bst *BST[T]) Root() *BinaryNode[T] {
 // traverseWithStack is a generic stack-based traversal using the strategy pattern.
 // It encapsulates the common iteration logic while allowing different child addition strategies.
 func (bst *BST[T]) traverseWithStack(
-	s *stack.Stack,
+	s *list.Stack,
 	nodeMap map[uint64]*BinaryNode[T],
 	visit func(*BinaryNode[T]),
 	addChildren func(*BinaryNode[T]),
@@ -652,7 +651,7 @@ func (bst *BST[T]) traverseWithStack(
 
 // addToStack is a helper function to add a BinaryNode to a stack.
 // It maps the node ID to the actual BinaryNode for later retrieval.
-func (bst *BST[T]) addToStack(s *stack.Stack, bn *BinaryNode[T], nodeMap map[uint64]*BinaryNode[T]) {
+func (bst *BST[T]) addToStack(s *list.Stack, bn *BinaryNode[T], nodeMap map[uint64]*BinaryNode[T]) {
 	if bn == nil {
 		return
 	}
@@ -666,7 +665,7 @@ func (bst *BST[T]) addToStack(s *stack.Stack, bn *BinaryNode[T], nodeMap map[uin
 
 // addToQueue is a helper function to add a BinaryNode to a queue.
 // It maps the node ID to the actual BinaryNode for later retrieval.
-func (bst *BST[T]) addToQueue(q *queue.Queue, bn *BinaryNode[T], nodeMap map[uint64]*BinaryNode[T]) {
+func (bst *BST[T]) addToQueue(q *list.Queue, bn *BinaryNode[T], nodeMap map[uint64]*BinaryNode[T]) {
 	if bn == nil {
 		return
 	}

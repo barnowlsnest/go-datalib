@@ -1,7 +1,6 @@
-package queue
+package list
 
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/list"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
@@ -27,10 +26,10 @@ import (
 type Queue struct {
 	// list is the internal LinkedList used to store queue elements.
 	// Elements are enqueued at the tail and dequeued from the head.
-	list *list.LinkedList
+	list *LinkedList
 }
 
-// New creates a new empty Queue.
+// NewQueue creates a new empty Queue.
 //
 // The returned queue is ready for use and has zero size.
 //
@@ -42,9 +41,9 @@ type Queue struct {
 //	q := New()
 //	q.Enqueue(node.New(1, nil, nil))
 //	fmt.Printf("Queue size: %d", q.Size()) // Output: Queue size: 1
-func New() *Queue {
+func NewQueue() *Queue {
 	return &Queue{
-		list: list.New(),
+		list: New(),
 	}
 }
 

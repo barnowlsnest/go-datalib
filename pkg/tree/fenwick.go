@@ -1,4 +1,4 @@
-package fenwick
+package tree
 
 import (
 	"golang.org/x/exp/constraints"
@@ -22,13 +22,13 @@ type Tree[T constraints.Integer | constraints.Float] struct {
 	n    int
 }
 
-// New creates a new Fenwick Tree with the given size.
+// NewFenwick creates a new Fenwick Tree with the given size.
 // The tree is initialized with all zeros.
 //
 // Example:
 //
 //	ft := fenwick.New[int](10)
-func New[T constraints.Integer | constraints.Float](size int) *Tree[T] {
+func NewFenwick[T constraints.Integer | constraints.Float](size int) *Tree[T] {
 	if size < 0 {
 		size = 0
 	}
