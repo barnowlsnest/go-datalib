@@ -378,7 +378,7 @@ func (bst *BST[T]) InOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s := list.New()
+	s := list.NewStack()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	current := bst.root
@@ -430,7 +430,7 @@ func (bst *BST[T]) PreOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s := list.New()
+	s := list.NewStack()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToStack(s, bst.root, nodeMap)
@@ -467,8 +467,8 @@ func (bst *BST[T]) PostOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	s1 := list.New()
-	s2 := list.New()
+	s1 := list.NewStack()
+	s2 := list.NewStack()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToStack(s1, bst.root, nodeMap)
@@ -524,7 +524,7 @@ func (bst *BST[T]) LevelOrder(visit func(*BinaryNode[T])) {
 		return
 	}
 
-	q := list.New()
+	q := list.NewQueue()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToQueue(q, bst.root, nodeMap)
@@ -567,7 +567,7 @@ func (bst *BST[T]) Height() int {
 		return -1
 	}
 
-	q := list.New()
+	q := list.NewQueue()
 	nodeMap := make(map[uint64]*BinaryNode[T])
 
 	bst.addToQueue(q, bst.root, nodeMap)
