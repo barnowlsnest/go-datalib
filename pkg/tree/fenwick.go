@@ -4,7 +4,7 @@ import (
 	"golang.org/x/exp/constraints"
 )
 
-// Tree (also known as Binary Indexed Tree or BIT) is a data structure that efficiently
+// BITree (also known as Binary Indexed BITree or BIT) is a data structure that efficiently
 // supports prefix sum queries and point updates in O(log n) time.
 //
 // The tree uses 1-based indexing internally, where index relationships are determined
@@ -16,29 +16,29 @@ import (
 //   - Cumulative frequency tables
 //   - Range sum queries with updates
 //   - Counting inversions
-//   - 2D range sum queries (with 2D Fenwick Tree)
-type Tree[T constraints.Integer | constraints.Float] struct {
+//   - 2D range sum queries (with 2D Fenwick BITree)
+type BITree[T constraints.Integer | constraints.Float] struct {
 	tree []T
 	n    int
 }
 
-// NewFenwick creates a new Fenwick Tree with the given size.
+// NewFenwick creates a new Fenwick BITree with the given size.
 // The tree is initialized with all zeros.
 //
 // Example:
 //
 //	ft := fenwick.New[int](10)
-func NewFenwick[T constraints.Integer | constraints.Float](size int) *Tree[T] {
+func NewFenwick[T constraints.Integer | constraints.Float](size int) *BITree[T] {
 	if size < 0 {
 		size = 0
 	}
-	return &Tree[T]{
+	return &BITree[T]{
 		tree: make([]T, size+1), // index 0 is unused, indices 1..n are used
 		n:    size,
 	}
 }
 
-// FromSlice creates a Fenwick Tree from an existing slice.
+// FromSlice creates a Fenwick BITree from an existing slice.
 // The input slice is treated as 0-indexed, but internally the tree uses 1-based indexing.
 // This is more efficient than creating an empty tree and updating each element individually.
 // Time complexity: O(n log n)
@@ -47,9 +47,9 @@ func NewFenwick[T constraints.Integer | constraints.Float](size int) *Tree[T] {
 //
 //	data := []int{3, 2, -1, 6, 5, 4, -3, 3, 7, 2, 3}
 //	ft := fenwick.FromSlice(data)
-func FromSlice[T constraints.Integer | constraints.Float](data []T) *Tree[T] {
+func FromSlice[T constraints.Integer | constraints.Float](data []T) *BITree[T] {
 	n := len(data)
-	tree := &Tree[T]{
+	tree := &BITree[T]{
 		tree: make([]T, n+1),
 		n:    n,
 	}
@@ -62,9 +62,9 @@ func FromSlice[T constraints.Integer | constraints.Float](data []T) *Tree[T] {
 	return tree
 }
 
-// Size returns the size of the Fenwick Tree.
+// Size returns the size of the Fenwick BITree.
 // Time complexity: O(1)
-func (t *Tree[T]) Size() int {
+func (t *BITree[T]) Size() int {
 	return t.n
 }
 
@@ -77,7 +77,7 @@ func (t *Tree[T]) Size() int {
 //
 //	ft.Update(3, 5)  // Add 5 to index 3
 //	ft.Update(3, -2) // Subtract 2 from index 3
-func (t *Tree[T]) Update(index int, delta T) {
+func (t *BITree[T]) Update(index int, delta T) {
 	if index <= 0 || index > t.n {
 		return // Out of bounds, silently ignore
 	}
@@ -95,7 +95,7 @@ func (t *Tree[T]) Update(index int, delta T) {
 // Example:
 //
 //	sum := ft.Query(5) // Sum of elements from index 1 to 5
-func (t *Tree[T]) Query(index int) T {
+func (t *BITree[T]) Query(index int) T {
 	if index <= 0 {
 		var zero T
 		return zero
@@ -120,7 +120,7 @@ func (t *Tree[T]) Query(index int) T {
 // Example:
 //
 //	sum := ft.RangeQuery(3, 7) // Sum of elements from index 3 to 7
-func (t *Tree[T]) RangeQuery(left, right int) T {
+func (t *BITree[T]) RangeQuery(left, right int) T {
 	if left > right || left <= 0 || right > t.n {
 		var zero T
 		return zero
@@ -140,7 +140,7 @@ func (t *Tree[T]) RangeQuery(left, right int) T {
 // Example:
 //
 //	ft.Set(3, 10) // Set index 3 to value 10
-func (t *Tree[T]) Set(index int, value T) {
+func (t *BITree[T]) Set(index int, value T) {
 	if index <= 0 || index > t.n {
 		return
 	}
@@ -157,7 +157,7 @@ func (t *Tree[T]) Set(index int, value T) {
 // Example:
 //
 //	val := ft.Get(3) // Get value at index 3
-func (t *Tree[T]) Get(index int) T {
+func (t *BITree[T]) Get(index int) T {
 	if index <= 0 || index > t.n {
 		var zero T
 		return zero
@@ -170,22 +170,22 @@ func (t *Tree[T]) Get(index int) T {
 	return t.Query(index) - t.Query(index-1)
 }
 
-// Clear resets all elements in the Fenwick Tree to zero.
+// Clear resets all elements in the Fenwick BITree to zero.
 // Time complexity: O(n)
-func (t *Tree[T]) Clear() {
+func (t *BITree[T]) Clear() {
 	for i := range t.tree {
 		t.tree[i] = 0
 	}
 }
 
-// ToSlice returns a 0-indexed slice containing all values in the Fenwick Tree.
+// ToSlice returns a 0-indexed slice containing all values in the Fenwick BITree.
 // The returned slice is a copy, so modifications won't affect the tree.
 // Time complexity: O(n log n)
 //
 // Example:
 //
 //	data := ft.ToSlice() // Returns []T with 0-indexed values
-func (t *Tree[T]) ToSlice() []T {
+func (t *BITree[T]) ToSlice() []T {
 	if t.n == 0 {
 		return []T{}
 	}
