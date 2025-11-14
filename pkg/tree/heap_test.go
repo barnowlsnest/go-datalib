@@ -481,7 +481,7 @@ type HeapTypesTestSuite struct {
 	suite.Suite
 }
 
-func (s *TypesTestSuite) TestFloat64() {
+func (s *HeapTypesTestSuite) TestFloat64() {
 	h := NewMin[float64]()
 
 	h.Push(3.14)
@@ -493,7 +493,7 @@ func (s *TypesTestSuite) TestFloat64() {
 	s.Require().InDelta(1.41, val, 0.001)
 }
 
-func (s *TypesTestSuite) TestString() {
+func (s *HeapTypesTestSuite) TestString() {
 	h := NewMin[string]()
 
 	h.Push("charlie")
@@ -505,7 +505,7 @@ func (s *TypesTestSuite) TestString() {
 	s.Require().Equal("alice", val)
 }
 
-func (s *TypesTestSuite) TestUint64() {
+func (s *HeapTypesTestSuite) TestUint64() {
 	h := NewMax[uint64]()
 
 	h.Push(100)
@@ -543,5 +543,5 @@ func TestEdgeCasesHeapTestSuite(t *testing.T) {
 }
 
 func TestTypesHeapTestSuite(t *testing.T) {
-	suite.Run(t, new(TypesTestSuite))
+	suite.Run(t, new(HeapTypesTestSuite))
 }

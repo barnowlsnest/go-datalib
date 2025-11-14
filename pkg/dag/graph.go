@@ -231,7 +231,7 @@ func (g *Graph) IsAcyclic() <-chan bool {
 	go func() {
 		defer close(ch)
 
-		q := list.New()
+		q := list.NewQueue()
 		in := make(map[NodeID]int)
 
 		// Collect all nodes from the graph (both with outgoing and incoming edges)
