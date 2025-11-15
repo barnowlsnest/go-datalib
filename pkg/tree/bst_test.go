@@ -3,6 +3,7 @@ package tree
 import (
 	"testing"
 
+	"github.com/barnowlsnest/go-datalib/pkg/node"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
@@ -20,7 +21,7 @@ func (s *BSTTestSuite) SetupTest() {
 // buildTree is a helper to build a tree from values
 func (s *BSTTestSuite) buildTree(values []int) {
 	for i, v := range values {
-		s.bst.Insert(NewNodeValue(uint64(i+1), v))
+		s.bst.Insert(node.ID(uint64(i+1)), v)
 	}
 }
 
@@ -28,8 +29,7 @@ func (s *BSTTestSuite) buildTree(values []int) {
 func collectValuesInt(traversalFunc func(func(*BinaryNode[int]))) []int {
 	var values []int
 	traversalFunc(func(node *BinaryNode[int]) {
-		props, _ := node.Props()
-		values = append(values, props.Value)
+		values = append(values, node.Value())
 	})
 	return values
 }
@@ -93,7 +93,7 @@ func (s *BSTTestSuite) TestInsert() {
 		s.Run(tc.name, func() {
 			bst := NewBST[int]()
 			for i, v := range tc.insertValues {
-				bst.Insert(NewNodeValue(uint64(i+1), v))
+				bst.Insert(node.ID(uint64(i+1)), v)
 			}
 			assert.Equal(s.T(), tc.expectedSize, bst.Size())
 			assert.Equal(s.T(), tc.expectedEmpty, bst.IsEmpty())
@@ -101,24 +101,6 @@ func (s *BSTTestSuite) TestInsert() {
 				assert.NotNil(s.T(), bst.Root())
 				assert.True(s.T(), bst.Root().IsRoot())
 			}
-		})
-	}
-}
-
-func (s *BSTTestSuite) TestInsertEdgeCases() {
-	testCases := []struct {
-		name         string
-		value        *NodeValue[int]
-		shouldInsert bool
-	}{
-		{"nil value", nil, false},
-	}
-
-	for _, tc := range testCases {
-		s.Run(tc.name, func() {
-			bst := NewBST[int]()
-			inserted := bst.Insert(tc.value)
-			assert.Equal(s.T(), tc.shouldInsert, inserted)
 		})
 	}
 }
@@ -143,13 +125,12 @@ func (s *BSTTestSuite) TestSearch() {
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
-			node := s.bst.Search(tc.searchValue)
+			n := s.bst.Search(tc.searchValue)
 			if tc.shouldFind {
-				assert.NotNil(s.T(), node)
-				props, _ := node.Props()
-				assert.Equal(s.T(), tc.expectValue, props.Value)
+				assert.NotNil(s.T(), n)
+				assert.Equal(s.T(), tc.expectValue, n.Value())
 			} else {
-				assert.Nil(s.T(), node)
+				assert.Nil(s.T(), n)
 			}
 		})
 	}
@@ -248,7 +229,7 @@ func (s *BSTTestSuite) TestDelete() {
 		s.Run(tc.name, func() {
 			bst := NewBST[int]()
 			for i, v := range tc.treeValues {
-				bst.Insert(NewNodeValue(uint64(i+1), v))
+				bst.Insert(node.ID(uint64(i+1)), v)
 			}
 
 			deleted := bst.Delete(tc.deleteValue)
@@ -350,9 +331,8 @@ func (s *BSTTestSuite) TestTraversalEdgeCases() {
 		s.Run(tc.name, func() {
 			bst := tc.setup()
 			var values []int
-			tc.traversalFn(bst, func(node *BinaryNode[int]) {
-				props, _ := node.Props()
-				values = append(values, props.Value)
+			tc.traversalFn(bst, func(n *BinaryNode[int]) {
+				values = append(values, n.Value())
 			})
 			assert.Empty(s.T(), values)
 		})
@@ -420,7 +400,7 @@ func (s *BSTTestSuite) TestMinMaxHeight() {
 		s.Run(tc.name, func() {
 			bst := NewBST[int]()
 			for i, v := range tc.treeValues {
-				bst.Insert(NewNodeValue(uint64(i+1), v))
+				bst.Insert(node.ID(uint64(i+1)), v)
 			}
 
 			// Test Min
@@ -429,8 +409,7 @@ func (s *BSTTestSuite) TestMinMaxHeight() {
 				assert.Nil(s.T(), minNode)
 			} else {
 				assert.NotNil(s.T(), minNode)
-				props, _ := minNode.Props()
-				assert.Equal(s.T(), *tc.expectedMin, props.Value)
+				assert.Equal(s.T(), *tc.expectedMin, minNode.Value())
 			}
 
 			// Test Max
@@ -439,8 +418,7 @@ func (s *BSTTestSuite) TestMinMaxHeight() {
 				assert.Nil(s.T(), maxNode)
 			} else {
 				assert.NotNil(s.T(), maxNode)
-				props, _ := maxNode.Props()
-				assert.Equal(s.T(), *tc.expectedMax, props.Value)
+				assert.Equal(s.T(), *tc.expectedMax, maxNode.Value())
 			}
 
 			// Test Height
@@ -459,13 +437,13 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 		{
 			name: "mixed insert and delete",
 			operations: func(bst *BST[int]) {
-				bst.Insert(NewNodeValue(1, 50))
-				bst.Insert(NewNodeValue(2, 30))
-				bst.Insert(NewNodeValue(3, 70))
+				bst.Insert(node.ID(1), 50)
+				bst.Insert(node.ID(2), 30)
+				bst.Insert(node.ID(3), 70)
 				bst.Delete(30)
-				bst.Insert(NewNodeValue(4, 40))
+				bst.Insert(node.ID(4), 40)
 				bst.Delete(70)
-				bst.Insert(NewNodeValue(5, 60))
+				bst.Insert(node.ID(5), 60)
 			},
 			verify: func(t *testing.T, bst *BST[int]) {
 				assert.Equal(t, 3, bst.Size())
@@ -481,16 +459,15 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 			operations: func(bst *BST[int]) {
 				values := []int{50, 30, 70, 20, 40, 60, 80}
 				for i, v := range values {
-					bst.Insert(NewNodeValue(uint64(i+1), v))
+					bst.Insert(node.ID(uint64(i+1)), v)
 				}
-				bst.Delete(50) // Delete node with two children
+				bst.Delete(50) // Delete a node with two children
 			},
 			verify: func(t *testing.T, bst *BST[int]) {
-				// InOrder should produce sorted sequence
+				// InOrder should produce a sorted sequence
 				var values []int
-				bst.InOrder(func(node *BinaryNode[int]) {
-					props, _ := node.Props()
-					values = append(values, props.Value)
+				bst.InOrder(func(n *BinaryNode[int]) {
+					values = append(values, n.Value())
 				})
 				for i := 1; i < len(values); i++ {
 					assert.Less(t, values[i-1], values[i], "BST property violated")
@@ -502,7 +479,7 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 			operations: func(bst *BST[int]) {
 				// Insert 100 nodes
 				for i := 0; i < 100; i++ {
-					bst.Insert(NewNodeValue(uint64(i), i))
+					bst.Insert(node.ID(uint64(i)), i)
 				}
 				// Delete every other node
 				for i := 0; i < 100; i += 2 {
@@ -526,7 +503,7 @@ func (s *BSTTestSuite) TestComplexScenarios() {
 			operations: func(bst *BST[int]) {
 				values := []int{50, 30, 70, 20, 40, 60, 80}
 				for i, v := range values {
-					bst.Insert(NewNodeValue(uint64(i+1), v))
+					bst.Insert(node.ID(uint64(i+1)), v)
 				}
 				for i := len(values) - 1; i >= 0; i-- {
 					bst.Delete(values[i])
@@ -553,16 +530,15 @@ func (s *BSTTestSuite) TestDifferentTypes() {
 		bst := NewBST[string]()
 		words := []string{"dog", "cat", "elephant", "ant"}
 		for i, w := range words {
-			bst.Insert(NewNodeValue(uint64(i+1), w))
+			bst.Insert(node.ID(uint64(i+1)), w)
 		}
 
 		assert.Equal(s.T(), 4, bst.Size())
 
 		// InOrder should give sorted strings
 		var values []string
-		bst.InOrder(func(node *BinaryNode[string]) {
-			props, _ := node.Props()
-			values = append(values, props.Value)
+		bst.InOrder(func(n *BinaryNode[string]) {
+			values = append(values, n.Value())
 		})
 
 		expected := []string{"ant", "cat", "dog", "elephant"}
@@ -573,15 +549,14 @@ func (s *BSTTestSuite) TestDifferentTypes() {
 		bst := NewBST[float64]()
 		nums := []float64{3.14, 2.71, 1.41, 1.73}
 		for i, n := range nums {
-			bst.Insert(NewNodeValue(uint64(i+1), n))
+			bst.Insert(node.ID(uint64(i+1)), n)
 		}
 
 		assert.Equal(s.T(), 4, bst.Size())
 
 		minNode := bst.Min()
 		assert.NotNil(s.T(), minNode)
-		props, _ := minNode.Props()
-		assert.Equal(s.T(), 1.41, props.Value)
+		assert.Equal(s.T(), 1.41, minNode.Value())
 	})
 }
 

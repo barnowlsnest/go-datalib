@@ -13,7 +13,7 @@ import (
 //
 // Key features:
 //   - O(log n) average-case operations (search, insert, delete) for balanced trees
-//   - O(n) worst-case for unbalanced trees (degenerates to linked list)
+//   - O(n) worst-case for unbalanced trees (degenerates to a linked list)
 //   - All operations are iterative (no recursion) for better stack safety
 //   - Uses stack for depth-first traversals (InOrder, PreOrder, PostOrder)
 //   - Uses queue for breadth-first traversal (LevelOrder)
@@ -61,19 +61,14 @@ func NewBST[T cmp.Ordered]() *BST[T] {
 // Example:
 //
 //	bst := New[int]()
-//	inserted := bst.Insert(NewNodeValue(1, 50)) // returns true
-//	inserted = bst.Insert(NewNodeValue(2, 50))  // returns false (duplicate value)
-func (bst *BST[T]) Insert(value *NodeValue[T]) bool {
-	if value == nil {
+//	inserted := bst.Insert(node.ID(1), 50) // returns true
+//	inserted = bst.Insert(node.ID(2), 50)  // returns false (duplicate value)
+func (bst *BST[T]) Insert(n *node.Node, value T) bool {
+	if n == nil {
 		return false
 	}
 
-	props, err := value.Props()
-	if err != nil {
-		return false
-	}
-
-	newNode := NewBinaryNode(0, value, nil, nil)
+	newNode := NewBinaryNode(n, WithLevel[T](0), WithValue[T](value))
 
 	// Empty tree case
 	if bst.root == nil {
@@ -88,19 +83,14 @@ func (bst *BST[T]) Insert(value *NodeValue[T]) bool {
 	level := 0
 
 	for {
-		currentProps, err := current.Props()
-		if err != nil {
-			return false
-		}
-
 		// Duplicate check
-		if props.Value == currentProps.Value {
+		if value == current.val {
 			return false
 		}
 
 		level++
 
-		if props.Value < currentProps.Value {
+		if value < current.val {
 			// Go left
 			if !current.HasLeft() {
 				newNode.AsLeft()
@@ -143,16 +133,11 @@ func (bst *BST[T]) Search(value T) *BinaryNode[T] {
 	current := bst.root
 
 	for current != nil {
-		props, err := current.Props()
-		if err != nil {
-			return nil
-		}
-
-		if value == props.Value {
+		if value == current.val {
 			return current
 		}
 
-		if value < props.Value {
+		if value < current.val {
 			current = current.Left()
 		} else {
 			current = current.Right()
@@ -164,9 +149,9 @@ func (bst *BST[T]) Search(value T) *BinaryNode[T] {
 
 // Delete removes a value from the binary search tree while maintaining BST properties.
 // This is an iterative implementation that handles three cases:
-//  1. Node with no children (leaf): simply remove
-//  2. Node with one child: replace node with its child
-//  3. Node with two children: replace with inorder successor (leftmost node in right subtree)
+//  1. Node with no children (leaf): remove
+//  2. Node with one child: replace a node with its child
+//  3. Node with two children: replace it with inorder successor (leftmost node in right subtree)
 //
 // Parameters:
 //   - value: The value to delete from the tree
@@ -186,22 +171,22 @@ func (bst *BST[T]) Delete(value T) bool {
 		return false
 	}
 
-	// Find the node and its parent
-	parent, current, isLeftChild := bst.findNodeWithParent(value)
+	// Find the node and its p
+	p, current, isLeftChild := bst.findNodeWithParent(value)
 
 	// Value not found
 	if current == nil {
 		return false
 	}
 
-	// Determine node type and handle deletion
+	// Determine a node type and handle deletion
 	switch {
 	case !current.HasLeft() && !current.HasRight():
 		// Case 1: Leaf node (no children)
-		bst.deleteLeafNode(parent, current, isLeftChild)
+		bst.deleteLeafNode(p, current, isLeftChild)
 	case !current.HasLeft() || !current.HasRight():
 		// Case 2: Node with one child
-		bst.deleteNodeWithOneChild(parent, current, isLeftChild)
+		bst.deleteNodeWithOneChild(p, current, isLeftChild)
 	default:
 		// Case 3: Node with two children
 		bst.deleteNodeWithTwoChildren(current)
@@ -212,23 +197,18 @@ func (bst *BST[T]) Delete(value T) bool {
 }
 
 // findNodeWithParent locates a node by value and returns its parent and position.
-func (bst *BST[T]) findNodeWithParent(value T) (parent, current *BinaryNode[T], isLeftChild bool) {
-	parent = nil
+func (bst *BST[T]) findNodeWithParent(value T) (parentNode, current *BinaryNode[T], isLeftChild bool) {
+	parentNode = nil
 	current = bst.root
 	isLeftChild = false
 
 	for current != nil {
-		props, err := current.Props()
-		if err != nil {
-			return nil, nil, false
+		if value == current.val {
+			return parentNode, current, isLeftChild
 		}
 
-		if value == props.Value {
-			return parent, current, isLeftChild
-		}
-
-		parent = current
-		if value < props.Value {
+		parentNode = current
+		if value < current.val {
 			current = current.Left()
 			isLeftChild = true
 		} else {
@@ -285,23 +265,17 @@ func (bst *BST[T]) deleteNodeWithTwoChildren(current *BinaryNode[T]) {
 	// Find inorder successor (leftmost node in right subtree)
 	successor := bst.findMin(current.Right())
 
-	// Get successor's value
-	successorProps, err := successor.Props()
-	if err != nil {
-		return
-	}
-
 	// Delete successor (it has at most one child - right child)
-	bst.Delete(successorProps.Value)
+	bst.Delete(successor.val)
 
-	// Replace current node's value with successor's value
-	current.WithValue(successorProps.Value)
+	// Replace the current node's value with the successor's value
+	current.WithValue(successor.val)
 
 	// Compensate for the recursive delete that decremented size
 	bst.size++
 }
 
-// findMin finds the node with minimum value in a subtree (iterative).
+// findMin finds the node with a minimum value in a subtree (iterative).
 // Helper function used during deletion.
 func (bst *BST[T]) findMin(n *BinaryNode[T]) *BinaryNode[T] {
 	current := n
@@ -315,7 +289,7 @@ func (bst *BST[T]) findMin(n *BinaryNode[T]) *BinaryNode[T] {
 // Time complexity: O(h) where h is the height of the tree.
 //
 // Returns:
-//   - The BinaryNode with minimum value, or nil if tree is empty
+//   - The BinaryNode with minimum value, or nil if a tree is empty
 //
 // Example:
 //
@@ -335,7 +309,7 @@ func (bst *BST[T]) Min() *BinaryNode[T] {
 // Time complexity: O(h) where h is the height of the tree.
 //
 // Returns:
-//   - The BinaryNode with maximum value, or nil if tree is empty
+//   - The BinaryNode with maximum value, or nil if a tree is empty
 //
 // Example:
 //
@@ -547,7 +521,7 @@ func (bst *BST[T]) LevelOrder(visit func(*BinaryNode[T])) {
 	}
 }
 
-// Height returns the height of the tree (longest path from root to leaf).
+// Height returns the height of the tree (the longest path from root to leaf).
 // An empty tree has height -1, a tree with only root has height 0.
 // This is an iterative level-order approach.
 // Time complexity: O(n)
@@ -616,7 +590,7 @@ func (bst *BST[T]) Size() int {
 // IsEmpty returns true if the tree contains no nodes.
 //
 // Returns:
-//   - true if tree is empty, false otherwise
+//   - true if a tree is empty, false otherwise
 func (bst *BST[T]) IsEmpty() bool {
 	return bst.size == 0
 }
@@ -624,7 +598,7 @@ func (bst *BST[T]) IsEmpty() bool {
 // Root returns the root node of the tree.
 //
 // Returns:
-//   - The root BinaryNode, or nil if tree is empty
+//   - The root BinaryNode, or nil if a tree is empty
 func (bst *BST[T]) Root() *BinaryNode[T] {
 	return bst.root
 }
@@ -655,12 +629,9 @@ func (bst *BST[T]) addToStack(s *list.Stack, bn *BinaryNode[T], nodeMap map[uint
 	if bn == nil {
 		return
 	}
-	props, err := bn.Props()
-	if err != nil {
-		return
-	}
-	nodeMap[props.ID] = bn
-	s.Push(node.ID(props.ID))
+
+	nodeMap[bn.ID()] = bn
+	s.Push(bn.Node)
 }
 
 // addToQueue is a helper function to add a BinaryNode to a queue.
@@ -669,10 +640,7 @@ func (bst *BST[T]) addToQueue(q *list.Queue, bn *BinaryNode[T], nodeMap map[uint
 	if bn == nil {
 		return
 	}
-	props, err := bn.Props()
-	if err != nil {
-		return
-	}
-	nodeMap[props.ID] = bn
-	q.Enqueue(node.ID(props.ID))
+
+	nodeMap[bn.ID()] = bn
+	q.Enqueue(bn.Node)
 }

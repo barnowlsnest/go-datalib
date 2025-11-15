@@ -2,6 +2,8 @@ package tree
 
 import (
 	"cmp"
+
+	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
 const (
@@ -10,21 +12,66 @@ const (
 	rightNode
 )
 
-type BinaryNode[T cmp.Ordered] struct {
-	hierarchy int
-	level     int
-	*NodeValue[T]
-	left  *BinaryNode[T]
-	right *BinaryNode[T]
+type (
+	BinaryNodeOption[T cmp.Ordered] func(bn *BinaryNode[T])
+
+	BinaryNode[T cmp.Ordered] struct {
+		val       T
+		hierarchy int
+		level     int
+		*node.Node
+		parent *BinaryNode[T]
+		left   *BinaryNode[T]
+		right  *BinaryNode[T]
+	}
+)
+
+func WithValue[T cmp.Ordered](val T) BinaryNodeOption[T] {
+	return func(bn *BinaryNode[T]) {
+		bn.val = val
+	}
 }
 
-func NewBinaryNode[T cmp.Ordered](level int, nodeValue *NodeValue[T], left, right *BinaryNode[T]) *BinaryNode[T] {
-	return &BinaryNode[T]{
-		NodeValue: nodeValue,
-		left:      left,
-		right:     right,
-		level:     level,
+func WithParent[T cmp.Ordered](parent *BinaryNode[T]) BinaryNodeOption[T] {
+	return func(bn *BinaryNode[T]) {
+		bn.parent = parent
 	}
+}
+
+func WithLevel[T cmp.Ordered](level int) BinaryNodeOption[T] {
+	return func(bn *BinaryNode[T]) {
+		bn.level = level
+	}
+}
+
+func WithLeft[T cmp.Ordered](left *BinaryNode[T]) BinaryNodeOption[T] {
+	return func(bn *BinaryNode[T]) {
+		bn.left = left
+	}
+}
+
+func WithRight[T cmp.Ordered](right *BinaryNode[T]) BinaryNodeOption[T] {
+	return func(bn *BinaryNode[T]) {
+		bn.right = right
+	}
+}
+
+func NewBinaryNode[T cmp.Ordered](n *node.Node, opts ...BinaryNodeOption[T]) *BinaryNode[T] {
+	bn := &BinaryNode[T]{Node: n}
+
+	for _, opt := range opts {
+		opt(bn)
+	}
+
+	return bn
+}
+
+func (bn *BinaryNode[T]) WithValue(val T) {
+	bn.val = val
+}
+
+func (bn *BinaryNode[T]) Value() T {
+	return bn.val
 }
 
 func (bn *BinaryNode[T]) WithLeft(left *BinaryNode[T]) {
