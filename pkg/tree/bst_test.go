@@ -3,9 +3,10 @@ package tree
 import (
 	"testing"
 
-	"github.com/barnowlsnest/go-datalib/pkg/node"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+
+	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
 // BSTTestSuite is the main test suite for BST operations
@@ -137,8 +138,8 @@ func (s *BSTTestSuite) TestSearch() {
 }
 
 func (s *BSTTestSuite) TestSearchEmptyTree() {
-	node := s.bst.Search(50)
-	assert.Nil(s.T(), node)
+	n := s.bst.Search(50)
+	assert.Nil(s.T(), n)
 }
 
 func (s *BSTTestSuite) TestDelete() {
