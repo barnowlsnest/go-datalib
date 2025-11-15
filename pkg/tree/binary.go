@@ -20,21 +20,14 @@ type (
 		hierarchy int
 		level     int
 		*node.Node
-		parent *BinaryNode[T]
-		left   *BinaryNode[T]
-		right  *BinaryNode[T]
+		left  *BinaryNode[T]
+		right *BinaryNode[T]
 	}
 )
 
 func WithValue[T cmp.Ordered](val T) BinaryNodeOption[T] {
 	return func(bn *BinaryNode[T]) {
 		bn.val = val
-	}
-}
-
-func WithParent[T cmp.Ordered](parent *BinaryNode[T]) BinaryNodeOption[T] {
-	return func(bn *BinaryNode[T]) {
-		bn.parent = parent
 	}
 }
 
