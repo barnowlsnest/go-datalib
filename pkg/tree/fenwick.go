@@ -17,7 +17,7 @@ import (
 //   - Range sum queries with updates
 //   - Counting inversions
 //   - 2D range sum queries (with 2D Fenwick BITree)
-type BITree[T constraints.Integer | constraints.Float] struct {
+type BITree[T constraints.Unsigned | constraints.Integer | constraints.Float] struct {
 	tree []T
 	n    int
 }
