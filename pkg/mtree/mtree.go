@@ -1,6 +1,7 @@
 package mtree
 
 import (
+	"iter"
 	"slices"
 )
 
@@ -122,4 +123,23 @@ func (t *MTree[T]) Remove(n *Node[T]) error {
 	}
 
 	return nil
+}
+
+func (t *MTree[T]) Level(level int) iter.Seq[*Node[T]] {
+	return func(yield func(*Node[T]) bool) {
+		ids, exists := t.levels[level]
+		if !exists {
+			return
+		}
+
+		for _, id := range ids {
+			n, ok := t.nodes[id]
+			if !ok {
+				continue
+			}
+			if !yield(n) {
+				return
+			}
+		}
+	}
 }
