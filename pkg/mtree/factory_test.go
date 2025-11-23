@@ -18,7 +18,7 @@ func TestNewNodeFactory(t *testing.T) {
 }
 
 func (s *NewNodeFactoryTestSuite) TestNode() {
-	factory := NewNodeFactory[int]("node", testMaxBreadth, serial.Seq())
+	factory := NewFactory[int]("node", testMaxBreadth, serial.Seq())
 	n1 := factory.Node(ValueOpt[int](10))
 	s.NotNil(n1)
 	n2 := factory.Node(ValueOpt[int](20))
@@ -33,7 +33,7 @@ func (s *NewNodeFactoryTestSuite) TestNode() {
 }
 
 func (s *NewNodeFactoryTestSuite) TestRoot() {
-	factory := NewNodeFactory[int]("root", testMaxBreadth, serial.Seq())
+	factory := NewFactory[int]("root", testMaxBreadth, serial.Seq())
 	rootNode := factory.Root(50)
 	s.Nil(rootNode)
 	s.Equal(50, rootNode.Val())
@@ -41,7 +41,7 @@ func (s *NewNodeFactoryTestSuite) TestRoot() {
 }
 
 func (s *NewNodeFactoryTestSuite) TestRootWithChildren() {
-	factory := NewNodeFactory[int]("rootWithChildren", testMaxBreadth, serial.Seq())
+	factory := NewFactory[int]("rootWithChildren", testMaxBreadth, serial.Seq())
 	n1 := factory.Node(ValueOpt[int](1))
 	n2 := factory.Node(ValueOpt[int](2))
 	n3 := factory.Node(ValueOpt[int](3))
