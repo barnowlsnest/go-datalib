@@ -20,6 +20,7 @@ type (
 	NodeOption[T comparable] func(n *Node[T])
 
 	Node[T comparable] struct {
+		shard      string
 		id         uint64
 		level      int
 		maxBreadth int
@@ -30,8 +31,9 @@ type (
 	}
 )
 
-func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) *Node[T] {
+func NewNode[T comparable](shard string, id uint64, maxBreadth int, opts ...NodeOption[T]) *Node[T] {
 	n := &Node[T]{
+		shard:      shard,
 		id:         id,
 		level:      -1,
 		state:      detached,
@@ -46,8 +48,8 @@ func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) *No
 	return n
 }
 
-func NewRoot[T comparable](id uint64, maxBreadth int, val T) *Node[T] {
-	rootNode := NewNode[T](id, maxBreadth, ValueOpt(val))
+func NewRoot[T comparable](shard string, id uint64, maxBreadth int, val T) *Node[T] {
+	rootNode := NewNode[T](shard, id, maxBreadth, ValueOpt(val))
 	_ = rootNode.AsRoot()
 	return rootNode
 }
@@ -89,6 +91,10 @@ func (n *Node[T]) verifyMaxBreadth(count int) error {
 	}
 
 	return nil
+}
+
+func (n *Node[T]) Shard() string {
+	return n.shard
 }
 
 func (n *Node[T]) ID() uint64 {

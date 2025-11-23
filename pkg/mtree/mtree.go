@@ -1,6 +1,7 @@
 package mtree
 
 import (
+	"fmt"
 	"iter"
 	"slices"
 )
@@ -88,12 +89,19 @@ func (t *MTree[T]) Root() *Node[T] {
 	return t.root
 }
 
-func (t *MTree[T]) Add(n *Node[T]) error {
+func (t *MTree[T]) Add(n *Node[T], upsert bool) error {
 	if n == nil {
 		return ErrNil
 	}
 
-	t.nodes[n.id] = n
+	_, nodeExists := t.nodes[n.id]
+	switch {
+	case nodeExists && !upsert:
+		return fmt.Errorf("node %d already exists: %w", n.id, ErrNodeConflict)
+	default:
+		t.nodes[n.id] = n
+	}
+
 	_, exists := t.levels[n.level]
 	switch {
 	case !exists:

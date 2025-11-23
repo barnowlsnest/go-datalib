@@ -74,7 +74,7 @@ func (s *NodeTestSuite) TestNewNodeDefaults() {
 		},
 	}
 
-	n := NewNode[int](id, defaultMaxBreadth)
+	n := NewNode[int](DefaultShard, id, defaultMaxBreadth)
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			tc.spec(n)
@@ -83,7 +83,7 @@ func (s *NodeTestSuite) TestNewNodeDefaults() {
 }
 
 func (s *NodeTestSuite) TestNewRoot() {
-	rootNode := NewRoot[int](1, 3, 100)
+	rootNode := NewRoot[int](DefaultShard, 1, 3, 100)
 	s.NotNil(rootNode)
 	s.True(rootNode.IsRoot())
 	s.True(rootNode.AsRoot())

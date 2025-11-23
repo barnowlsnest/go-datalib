@@ -5,6 +5,7 @@ import (
 )
 
 var (
+	ErrNodeConflict = errors.New("node conflict err")
 	ErrNodeNotFound = errors.New("node not found err")
 	ErrNoMatch      = errors.New("no node match err")
 	ErrNil          = errors.New("nil err")
