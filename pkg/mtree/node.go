@@ -20,20 +20,19 @@ type (
 	NodeOption[T comparable] func(n *Node[T])
 
 	Node[T comparable] struct {
-		shard      string
 		id         uint64
 		level      int
 		maxBreadth int
 		state      int
 		val        T
 		parent     *Node[T]
+		container  *Container[T]
 		children   map[uint64]*Node[T]
 	}
 )
 
-func NewNode[T comparable](shard string, id uint64, maxBreadth int, opts ...NodeOption[T]) *Node[T] {
+func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) *Node[T] {
 	n := &Node[T]{
-		shard:      shard,
 		id:         id,
 		level:      -1,
 		state:      detached,
@@ -46,12 +45,6 @@ func NewNode[T comparable](shard string, id uint64, maxBreadth int, opts ...Node
 	}
 
 	return n
-}
-
-func NewRoot[T comparable](shard string, id uint64, maxBreadth int, val T) *Node[T] {
-	rootNode := NewNode[T](shard, id, maxBreadth, ValueOpt(val))
-	_ = rootNode.AsRoot()
-	return rootNode
 }
 
 func ValueOpt[T comparable](val T) NodeOption[T] {
@@ -93,8 +86,27 @@ func (n *Node[T]) verifyMaxBreadth(count int) error {
 	return nil
 }
 
-func (n *Node[T]) Shard() string {
-	return n.shard
+func (n *Node[T]) associate(container *Container[T]) {
+	n.container = container
+}
+
+func (n *Node[T]) asRoot() bool {
+	if n.IsRoot() {
+		return true
+	}
+
+	switch {
+	case n.parent != nil:
+		return false
+	case n.level >= 0:
+		return false
+	}
+
+	n.state = root
+	n.level = 0
+	n.parent = nil
+
+	return true
 }
 
 func (n *Node[T]) ID() uint64 {
@@ -345,7 +357,7 @@ func (n *Node[T]) Swap(target *Node[T]) error {
 
 	if target.IsRoot() {
 		n.Detach()
-		n.AsRoot()
+		n.asRoot()
 	}
 
 	if targetParent != nil {
@@ -357,7 +369,7 @@ func (n *Node[T]) Swap(target *Node[T]) error {
 
 	if n.IsRoot() {
 		target.Detach()
-		target.AsRoot()
+		target.asRoot()
 	}
 
 	sourceParent := n.parent
@@ -371,25 +383,6 @@ func (n *Node[T]) Swap(target *Node[T]) error {
 	target.children, n.children = n.children, target.children
 
 	return nil
-}
-
-func (n *Node[T]) AsRoot() bool {
-	if n.IsRoot() {
-		return true
-	}
-
-	switch {
-	case n.parent != nil:
-		return false
-	case n.level >= 0:
-		return false
-	}
-
-	n.state = root
-	n.level = 0
-	n.parent = nil
-
-	return true
 }
 
 func (n *Node[T]) IsAttached() bool {

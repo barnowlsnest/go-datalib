@@ -149,9 +149,9 @@ func (bst *BST[T]) Search(value T) *BinaryNode[T] {
 
 // Delete removes a value from the binary search tree while maintaining BST properties.
 // This is an iterative implementation that handles three cases:
-//  1. Node with no children (leaf): remove
-//  2. Node with one child: replace a node with its child
-//  3. Node with two children: replace it with inorder successor (leftmost node in right subtree)
+//  1. CreateNode with no children (leaf): remove
+//  2. CreateNode with one child: replace a node with its child
+//  3. CreateNode with two children: replace it with inorder successor (leftmost node in right subtree)
 //
 // Parameters:
 //   - value: The value to delete from the tree
@@ -185,10 +185,10 @@ func (bst *BST[T]) Delete(value T) bool {
 		// Case 1: Leaf node (no children)
 		bst.deleteLeafNode(p, current, isLeftChild)
 	case !current.HasLeft() || !current.HasRight():
-		// Case 2: Node with one child
+		// Case 2: CreateNode with one child
 		bst.deleteNodeWithOneChild(p, current, isLeftChild)
 	default:
-		// Case 3: Node with two children
+		// Case 3: CreateNode with two children
 		bst.deleteNodeWithTwoChildren(current)
 	}
 
@@ -330,7 +330,7 @@ func (bst *BST[T]) Max() *BinaryNode[T] {
 	return current
 }
 
-// InOrder performs an iterative in-order traversal (Left-Root-Right) using a stack.
+// InOrder performs an iterative in-order traversal (Left-CreateRootNode-Right) using a stack.
 // For a BST, this produces values in sorted ascending order.
 // Time complexity: O(n), Space complexity: O(h) where h is tree height.
 //
@@ -420,7 +420,7 @@ func (bst *BST[T]) PreOrder(visit func(*BinaryNode[T])) {
 	})
 }
 
-// PostOrder performs an iterative post-order traversal (Left-Right-Root) using two stacks.
+// PostOrder performs an iterative post-order traversal (Left-Right-CreateRootNode) using two stacks.
 // Time complexity: O(n), Space complexity: O(h) where h is tree height.
 //
 // Parameters:

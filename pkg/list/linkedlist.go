@@ -19,7 +19,7 @@ import (
 //   - Memory-efficient with minimal overhead
 //   - Safe handling of empty list conditions
 //
-// The LinkedList uses Node instances as nodes, where each Node contains
+// The LinkedList uses CreateNode instances as nodes, where each CreateNode contains
 // an ID and bidirectional references to adjacent nodes.
 //
 // Thread Safety:
@@ -67,7 +67,7 @@ func New() *LinkedList {
 // If the node already has next/prev references, they will be overwritten.
 //
 // Parameters:
-//   - n: The Node to add to the end of the list. Must not be nil.
+//   - n: The CreateNode to add to the end of the list. Must not be nil.
 //
 // Behavior:
 //   - If the list is empty, the node becomes both head and tail
@@ -98,7 +98,7 @@ func (list *LinkedList) Push(n *node.Node) {
 // PushID is a convenience method to add a new node with the given ID to the end of the list.
 //
 // This is equivalent to creating a node with node.New(id, nil, nil) and calling Push().
-// It simplifies the common case of adding nodes by ID without manually creating Node instances.
+// It simplifies the common case of adding nodes by ID without manually creating CreateNode instances.
 //
 // Parameters:
 //   - id: The ID for the new node to add to the end of the list
@@ -121,7 +121,7 @@ func (list *LinkedList) PushID(id uint64) {
 // prevent memory leaks and maintain clean separation from the list.
 //
 // Returns:
-//   - A copy of the removed Node, or nil if the list is empty
+//   - A copy of the removed CreateNode, or nil if the list is empty
 //
 // Behavior:
 //   - If the list is empty, returns nil without changing the size
@@ -161,7 +161,7 @@ func (list *LinkedList) Pop() *node.Node {
 // PopID removes the last node from the list and returns its ID.
 //
 // This is a convenience method that combines Pop() with ID extraction.
-// It's useful when you only need the ID value and don't need the full Node.
+// It's useful when you only need the ID value and don't need the full CreateNode.
 //
 // Returns:
 //   - The ID of the removed node, or 0 and node.ErrNil if the list is empty
@@ -190,7 +190,7 @@ func (list *LinkedList) PopID() (uint64, error) {
 // If the node already has next/prev references, they will be overwritten.
 //
 // Parameters:
-//   - n: The Node to add to the beginning of the list. Must not be nil.
+//   - n: The CreateNode to add to the beginning of the list. Must not be nil.
 //
 // Behavior:
 //   - If the list is empty, the node becomes both head and tail
@@ -221,7 +221,7 @@ func (list *LinkedList) Unshift(n *node.Node) {
 // UnshiftID is a convenience method to add a new node with the given ID to the beginning of the list.
 //
 // This is equivalent to creating a node with node.New(id, nil, nil) and calling Unshift().
-// It simplifies the common case of adding nodes by ID without manually creating Node instances.
+// It simplifies the common case of adding nodes by ID without manually creating CreateNode instances.
 //
 // Parameters:
 //   - id: The ID for the new node to add to the beginning of the list
@@ -244,7 +244,7 @@ func (list *LinkedList) UnshiftID(id uint64) {
 // prevent memory leaks and maintain clean separation from the list.
 //
 // Returns:
-//   - A copy of the removed Node, or nil if the list is empty
+//   - A copy of the removed CreateNode, or nil if the list is empty
 //
 // Behavior:
 //   - If the list is empty, returns nil without changing the size
@@ -285,7 +285,7 @@ func (list *LinkedList) Shift() *node.Node {
 // ShiftID removes the first node from the list and returns its ID.
 //
 // This is a convenience method that combines Shift() with ID extraction.
-// It's useful when you only need the ID value and don't need the full Node.
+// It's useful when you only need the ID value and don't need the full CreateNode.
 //
 // Returns:
 //   - The ID of the removed node, or 0 and node.ErrNil if the list is empty
@@ -318,7 +318,7 @@ func (list *LinkedList) Size() int {
 // Head returns the first node in the list.
 //
 // Returns:
-//   - The first node in the list, or an empty Node if the list is empty
+//   - The first node in the list, or an empty CreateNode if the list is empty
 func (list *LinkedList) Head() (node.Node, bool) {
 	if list.head == nil {
 		return node.Node{}, false
@@ -356,7 +356,7 @@ func (list *LinkedList) HeadID() (uint64, error) {
 // Tail returns the last node in the list.
 //
 // Returns:
-//   - The last node in the list, or an empty Node if the list is empty
+//   - The last node in the list, or an empty CreateNode if the list is empty
 func (list *LinkedList) Tail() (node.Node, bool) {
 	if list.tail == nil {
 		return node.Node{}, false

@@ -52,7 +52,7 @@ func NewQueue() *Queue {
 // This operation is O(1) and increases the queue size by 1.
 //
 // Parameters:
-//   - n: The Node to add to the rear of the queue. Must not be nil.
+//   - n: The CreateNode to add to the rear of the queue. Must not be nil.
 //
 // Example:
 //
@@ -70,7 +70,7 @@ func (q *Queue) Enqueue(n *node.Node) {
 // node is a copy with nil next/prev pointers.
 //
 // Returns:
-//   - A copy of the removed Node, or nil if the queue is empty
+//   - A copy of the removed CreateNode, or nil if the queue is empty
 //
 // Example:
 //
@@ -90,7 +90,7 @@ func (q *Queue) Dequeue() *node.Node {
 // This operation is O(1) and does not modify the queue.
 //
 // Returns:
-//   - A copy of the front Node and true, or an empty Node and false if the queue is empty
+//   - A copy of the front CreateNode and true, or an empty CreateNode and false if the queue is empty
 //
 // Example:
 //
@@ -110,7 +110,7 @@ func (q *Queue) PeekFront() (node.Node, bool) {
 // This operation is O(1) and does not modify the queue.
 //
 // Returns:
-//   - A copy of the rear Node and true, or an empty Node and false if the queue is empty
+//   - A copy of the rear CreateNode and true, or an empty CreateNode and false if the queue is empty
 //
 // Example:
 //

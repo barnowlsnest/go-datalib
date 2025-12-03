@@ -52,7 +52,7 @@ func NewStack() *Stack {
 // This operation is O(1) and increases the stack size by 1.
 //
 // Parameters:
-//   - n: The Node to add to the top of the stack. Must not be nil.
+//   - n: The CreateNode to add to the top of the stack. Must not be nil.
 //
 // Example:
 //
@@ -70,7 +70,7 @@ func (s *Stack) Push(n *node.Node) {
 // node is a copy with nil next/prev pointers.
 //
 // Returns:
-//   - A copy of the removed Node, or nil if the stack is empty
+//   - A copy of the removed CreateNode, or nil if the stack is empty
 //
 // Example:
 //
@@ -90,7 +90,7 @@ func (s *Stack) Pop() *node.Node {
 // This operation is O(1) and does not modify the stack.
 //
 // Returns:
-//   - A copy of the top Node and true, or an empty Node and false if the stack is empty
+//   - A copy of the top CreateNode and true, or an empty CreateNode and false if the stack is empty
 //
 // Example:
 //

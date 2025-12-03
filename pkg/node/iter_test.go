@@ -37,7 +37,7 @@ func (s *IterSeqTestSuite) TestNextNodes_SingleNode() {
 	s.Require().Equal([]int{0}, collected, "Should yield index 0")
 	s.Require().Len(nodes, 1, "Should yield exactly one node")
 	s.Require().Equal(node, nodes[0], "Should yield the starting node")
-	s.Require().Equal(uint64(1), nodes[0].ID(), "Node should have correct ID")
+	s.Require().Equal(uint64(1), nodes[0].ID(), "CreateNode should have correct ID")
 }
 
 func (s *IterSeqTestSuite) TestNextNodes_LinearChain() {
@@ -120,7 +120,7 @@ func (s *IterSeqTestSuite) TestPrevNodes_SingleNode() {
 	s.Require().Equal([]int{0}, collected, "Should yield index 0")
 	s.Require().Len(nodes, 1, "Should yield exactly one node")
 	s.Require().Equal(node, nodes[0], "Should yield the starting node")
-	s.Require().Equal(uint64(1), nodes[0].ID(), "Node should have correct ID")
+	s.Require().Equal(uint64(1), nodes[0].ID(), "CreateNode should have correct ID")
 }
 
 func (s *IterSeqTestSuite) TestPrevNodes_LinearChain() {
