@@ -8,12 +8,48 @@ import (
 )
 
 type (
-	ChildrenSlice  = []string
+	// ChildrenSlice represents a slice of child node values.
+	ChildrenSlice = []string
+
+	// HierarchyModel represents a tree structure as a map where keys are node values
+	// and values are slices of their children's values.
+	// The special RootTag key ("#root") must contain exactly one value representing the root node.
 	HierarchyModel = map[string]ChildrenSlice
 )
 
+// RootTag is the special key in HierarchyModel that identifies the root node.
 const RootTag = "#root"
 
+// Hierarchy builds a tree from a HierarchyModel with cycle detection.
+// It constructs a tree structure by traversing the model and creating Node instances.
+//
+// Parameters:
+//   - m: HierarchyModel defining the tree structure
+//   - maxBreadth: Maximum number of children per node
+//   - nextID: Function to generate unique IDs for each node
+//
+// Returns an error if:
+//   - RootTag is not defined in the model (ErrRootTagNotFound)
+//   - Multiple roots are specified (ErrHierarchyModel)
+//   - nextID is nil (ErrNil)
+//   - maxBreadth < 1 (ErrHierarchyModel)
+//   - Root reference doesn't exist in the model (ErrHierarchyModel)
+//   - A cycle is detected in the hierarchy (ErrHierarchyModel with "cycle detected" message)
+//   - MaxBreadth is exceeded for any node (ErrMaxBreadth)
+//
+// Cycle Detection:
+// The function detects and prevents infinite loops caused by circular references
+// (e.g., A→B→A or A→A). When a cycle is detected, it returns an error immediately.
+//
+// Example:
+//
+//	model := HierarchyModel{
+//	    RootTag: {"Company"},
+//	    "Company": {"Engineering", "Sales"},
+//	    "Engineering": {"Frontend", "Backend"},
+//	}
+//	idGen := func() uint64 { return serial.Seq().Next("company") }
+//	root, err := Hierarchy(model, 10, idGen)
 func Hierarchy(m HierarchyModel, maxBreadth int, nextID func() uint64) (*Node[string], error) {
 	rootDef, rootDefined := m[RootTag]
 	switch {
@@ -88,6 +124,21 @@ buildBranch:
 	}
 }
 
+// ToModel converts a tree (starting from root node) back into a HierarchyModel.
+// It performs a breadth-first traversal to build the model representation.
+//
+// Parameters:
+//   - n: The root node of the tree to convert
+//
+// Returns an error if:
+//   - n is nil (ErrNil)
+//   - n is not a root node (ErrHierarchyModel)
+//   - Internal inconsistencies are detected during traversal (ErrNil, ErrHierarchyModel)
+//
+// Example:
+//
+//	root, _ := Hierarchy(model, 10, idGen)
+//	modelCopy, err := ToModel(root)  // Reconstruct the model
 func ToModel(n *Node[string]) (HierarchyModel, error) {
 	if n == nil {
 		return nil, ErrNil

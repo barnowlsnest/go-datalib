@@ -1,3 +1,14 @@
+// Package mtree provides a generic multi-way tree (M-Tree) implementation with support
+// for hierarchical data structures, node operations, and cycle detection.
+//
+// The package offers:
+//   - Generic Node[T] type for building tree structures with any comparable type
+//   - Configurable maximum breadth (max children per node)
+//   - Parent-child relationship management with automatic level tracking
+//   - Tree traversal and node selection operations
+//   - Concurrent-safe node selection with context support
+//   - Hierarchy model builder with cycle detection
+//   - Node swapping and movement operations
 package mtree
 
 import (
@@ -19,8 +30,17 @@ const (
 )
 
 type (
+	// NodeOption is a functional option for configuring a Node during creation.
 	NodeOption[T comparable] func(n *Node[T]) error
 
+	// Node represents a node in a multi-way tree with generic value type T.
+	// Each node can have multiple children (up to maxBreadth), a single parent,
+	// and maintains its level in the tree hierarchy.
+	//
+	// Node states:
+	//   - root: The top-level node with no parent (level 0)
+	//   - attached: A child node connected to a parent
+	//   - detached: An orphaned node not connected to any parent (level -1)
 	Node[T comparable] struct {
 		id         uint64
 		level      int
@@ -32,9 +52,27 @@ type (
 		children   map[uint64]*Node[T]
 	}
 
+	// NodeSuccessorFunc is a predicate function for filtering/selecting child nodes.
 	NodeSuccessorFunc[T comparable] func(child *Node[T]) bool
 )
 
+// NewNode creates a new tree node with the given ID and maximum breadth.
+// The maxBreadth parameter limits the number of children this node can have.
+//
+// Optional configuration can be applied using NodeOption functions:
+//   - ValueOpt: Set the node's value
+//   - LevelOpt: Set the node's level (typically for root nodes)
+//   - ParentOpt: Attach this node as a child of a parent
+//   - ChildOpt: Attach existing nodes as children
+//
+// Returns an error if:
+//   - Any option returns an error
+//   - MaxBreadth would be exceeded when attaching children
+//
+// Example:
+//
+//	root, err := NewNode[string](1, 5, ValueOpt("root"), LevelOpt(0))
+//	child, err := NewNode[string](2, 3, ValueOpt("child"), ParentOpt(root))
 func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) (*Node[T], error) {
 	n := &Node[T]{
 		id:         id,
@@ -324,11 +362,16 @@ func (n *Node[T]) SelectOneChildByEachValue(ctx context.Context, values ...T) (m
 		dedup[val] = struct{}{}
 	}
 
+	if len(dedup) == 0 {
+		return make(map[T]*Node[T]), nil
+	}
+
 	eg := errgroup.Group{}
-	childCh, errCh := make(chan *Node[T], len(dedup)), make(chan error, 1)
+	childCh := make(chan *Node[T], len(dedup))
+	errCh := make(chan error, 1)
 
 	for val := range dedup {
-		val := val
+		val := val // Required: capture loop variable for goroutine closure
 		eg.Go(func() error {
 			child, err := n.SelectOneChildFunc(func(n *Node[T]) bool {
 				return n.Val() == val
@@ -343,28 +386,41 @@ func (n *Node[T]) SelectOneChildByEachValue(ctx context.Context, values ...T) (m
 		})
 	}
 
+	// Wait for all goroutines in a separate goroutine
 	go func() {
-		defer close(errCh)
-
 		if err := eg.Wait(); err != nil {
 			errCh <- err
+			close(errCh)
 		} else {
 			close(childCh)
+			close(errCh)
 		}
 	}()
 
 	res := make(map[T]*Node[T])
+	expectedCount := len(dedup)
+	receivedCount := 0
+
 	for {
 		select {
 		case <-ctx.Done():
 			return nil, ctx.Err()
+		case err, ok := <-errCh:
+			if ok && err != nil {
+				return nil, err
+			}
+			// errCh closed without error - continue draining childCh
 		case child, ok := <-childCh:
 			if !ok {
+				// childCh closed - all results received
 				return res, nil
 			}
 			res[child.Val()] = child
-		case err := <-errCh:
-			return nil, err
+			receivedCount++
+			if receivedCount == expectedCount {
+				// All expected children received
+				return res, nil
+			}
 		}
 	}
 }

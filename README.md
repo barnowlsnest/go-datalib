@@ -10,6 +10,7 @@ A Go library providing fundamental data structures and high-performance utilitie
 - **Stack** - LIFO data structure built on LinkedList
 - **Queue** - FIFO data structure built on LinkedList
 - **Node** - Foundation for building custom linked data structures
+- **MTree (Multi-way Tree)** - Generic tree structure with configurable max breadth, parent-child operations, and cycle detection
 
 ### Utilities
 
@@ -97,6 +98,50 @@ edgeHash := serial.NSum(nodeA, nodeB)
 // Order matters: NSum(a, b) != NSum(b, a)
 ```
 
+### Multi-way Tree (MTree)
+
+```go
+import (
+	"github.com/barnowlsnest/go-datalib/pkg/mtree"
+	"github.com/barnowlsnest/go-datalib/pkg/serial"
+)
+
+// Create nodes with maximum breadth (max children)
+root, _ := mtree.NewNode[string](1, 5, mtree.ValueOpt("CEO"))
+root.asRoot() // Mark as root node
+
+engineering, _ := mtree.NewNode[string](2, 3,
+	mtree.ValueOpt("Engineering"),
+	mtree.ParentOpt(root),
+)
+
+sales, _ := mtree.NewNode[string](3, 3,
+	mtree.ValueOpt("Sales"),
+	mtree.ParentOpt(root),
+)
+
+// Query operations
+children, _ := root.SelectChildrenFunc(func(n *mtree.Node[string]) bool {
+	return n.Val() == "Engineering"
+})
+
+// Build from model with cycle detection
+model := mtree.HierarchyModel{
+	mtree.RootTag: {"Company"},
+	"Company":     {"Engineering", "Sales"},
+	"Engineering": {"Frontend", "Backend"},
+}
+idGen := func() uint64 { return serial.Seq().Next("company") }
+tree, err := mtree.Hierarchy(model, 10, idGen)
+if err != nil {
+	// Handles cycles: A→B→A will return error
+	panic(err)
+}
+
+// Convert back to model
+modelCopy, _ := mtree.ToModel(tree)
+```
+
 ## Performance
 
 ### Serial Benchmarks (Apple M1 Max)
@@ -118,7 +163,8 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 ### Thread Safety
 
 - **Serial package**: Fully thread-safe using atomic operations
-- **Data structures** (LinkedList, Stack, Queue): Require external synchronization for concurrent access
+- **Data structures** (LinkedList, Stack, Queue, MTree): Require external synchronization for concurrent access
+- **MTree.SelectOneChildByEachValue**: Context-aware concurrent child selection with proper goroutine synchronization
 
 ### Performance Optimizations
 
