@@ -44,6 +44,9 @@ func Hierarchy(m HierarchyModel, maxBreadth int, nextID func() uint64) (*Node[st
 
 	stack := list.NewStack()
 	lookup := make(map[uint64]*Node[string])
+	visited := make(map[string]bool) // Track visited values to detect cycles
+	visited[rootNodeVal] = true
+
 	var (
 		parent   *Node[string]
 		children []string
@@ -52,6 +55,11 @@ func Hierarchy(m HierarchyModel, maxBreadth int, nextID func() uint64) (*Node[st
 	children = rootChildren
 buildBranch:
 	for _, childVal := range children {
+		// Check for cycle: if we've seen this value before in our traversal path
+		if visited[childVal] {
+			return nil, errors.Join(ErrHierarchyModel, errors.New("cycle detected: value \""+childVal+"\" already exists in hierarchy"))
+		}
+
 		childID := nextID()
 		childNode, errChild := NewNode[string](childID, maxBreadth, ValueOpt[string](childVal))
 		if errChild != nil {
@@ -61,6 +69,7 @@ buildBranch:
 			return nil, errAttach
 		}
 
+		visited[childVal] = true
 		lookup[childID] = childNode
 		stack.Push(node.ID(childID))
 	}
