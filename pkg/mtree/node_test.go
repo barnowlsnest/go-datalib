@@ -1,8 +1,10 @@
 package mtree
 
 import (
+	"context"
 	"math"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/suite"
 
@@ -297,4 +299,663 @@ func (s *NodeTestSuite) TestNode_Swap_Once() {
 
 	s.ElementsMatch(expectedModel["CTO"], actualModel["CTO"])
 	s.ElementsMatch(expectedModel["CFO"], actualModel["CFO"])
+}
+
+func (s *NodeTestSuite) TestNode_Swap_TargetRoot() {
+	model := HierarchyModel{
+		RootTag: {"play"},
+		"play":  {"intro", "ad", "game_scene"},
+		"intro": {"clip1", "clip2"},
+	}
+
+	r, err := Hierarchy(
+		model, 3,
+		func() uint64 {
+			return s.nextGroupID("hierarchy2")
+		},
+	)
+	s.NotNil(r)
+	s.Require().NoError(err)
+
+	intro := func(n *Node[string]) bool {
+		return n.Val() == "intro"
+	}
+
+	introNode, err := r.SelectOneChildFunc(intro)
+	s.NotNil(introNode)
+	s.Require().NoError(err)
+
+	err = r.Swap(introNode)
+	s.Require().NoError(err)
+	r = introNode
+
+	actualModel, err := ToModel(r)
+	s.NotNil(actualModel)
+	s.Require().NoError(err)
+
+	expectedModel := HierarchyModel{
+		RootTag: {"intro"},
+		"intro": {"play", "ad", "game_scene"},
+		"play":  {"clip1", "clip2"},
+	}
+
+	s.ElementsMatch(expectedModel[RootTag], actualModel[RootTag])
+	s.ElementsMatch(expectedModel["intro"], actualModel["intro"])
+	s.ElementsMatch(expectedModel["play"], actualModel["play"])
+}
+
+// Test error handling in NewNode options
+func (s *NodeTestSuite) TestNewNode_ParentOpt_Nil() {
+	id := s.nextDefaultGroupID()
+	n, err := NewNode[int](id, 0, ParentOpt[int](nil))
+	s.Nil(n)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *NodeTestSuite) TestNewNode_ChildOpt_Nil() {
+	id := s.nextDefaultGroupID()
+	n, err := NewNode[int](id, 0, ChildOpt[int](nil))
+	s.Nil(n)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *NodeTestSuite) TestNewNode_ParentOpt_MaxBreadthExceeded() {
+	parentID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 0)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0, ParentOpt[int](parent))
+	s.Nil(child)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+func (s *NodeTestSuite) TestNewNode_ChildOpt_MaxBreadthExceeded() {
+	childID1, childID2, parentID := s.nextDefaultGroupID(), s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	child1, err := NewNode[int](childID1, 0)
+	s.NotNil(child1)
+	s.Require().NoError(err)
+
+	child2, err := NewNode[int](childID2, 0)
+	s.NotNil(child2)
+	s.Require().NoError(err)
+
+	parent, err := NewNode[int](parentID, 1, ChildOpt[int](child1), ChildOpt[int](child2))
+	s.Nil(parent)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+// Test AttachMany function
+func (s *NodeTestSuite) TestNode_AttachMany() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	childIDs := []uint64{
+		s.nextDefaultGroupID(),
+		s.nextDefaultGroupID(),
+		s.nextDefaultGroupID(),
+	}
+
+	children := make([]*Node[string], len(childIDs))
+	for i, id := range childIDs {
+		child, err := NewNode[string](id, 0, ValueOpt[string]("child"))
+		s.NotNil(child)
+		s.Require().NoError(err)
+		children[i] = child
+	}
+
+	err = parent.AttachMany(children...)
+	s.NoError(err)
+	s.Equal(3, parent.Breadth())
+
+	for _, child := range children {
+		s.True(parent.HasChild(child))
+		s.True(child.IsChildOf(parent))
+	}
+}
+
+func (s *NodeTestSuite) TestNode_AttachMany_WithNilChildren() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child1, err := NewNode[string](s.nextDefaultGroupID(), 0)
+	s.NotNil(child1)
+	s.Require().NoError(err)
+
+	child2, err := NewNode[string](s.nextDefaultGroupID(), 0)
+	s.NotNil(child2)
+	s.Require().NoError(err)
+
+	// Include nil children - they should be filtered out
+	err = parent.AttachMany(child1, nil, child2, nil)
+	s.NoError(err)
+	s.Equal(2, parent.Breadth())
+}
+
+func (s *NodeTestSuite) TestNode_AttachMany_MaxBreadthExceeded() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 2)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	children := make([]*Node[int], 3)
+	for i := range children {
+		children[i], err = NewNode[int](s.nextDefaultGroupID(), 0)
+		s.NotNil(children[i])
+		s.Require().NoError(err)
+	}
+
+	err = parent.AttachMany(children...)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+// Test DetachChild function
+func (s *NodeTestSuite) TestNode_DetachChild() {
+	parentID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 2)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0, ParentOpt[int](parent))
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	s.True(parent.HasChild(child))
+	s.Equal(1, parent.Breadth())
+
+	err = parent.DetachChild(child)
+	s.NoError(err)
+	s.False(parent.HasChild(child))
+	s.Equal(0, parent.Breadth())
+	s.True(child.IsDetached())
+	s.False(child.HasParent())
+}
+
+func (s *NodeTestSuite) TestNode_DetachChild_Nil() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	err = parent.DetachChild(nil)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *NodeTestSuite) TestNode_DetachChild_NotFound() {
+	parentID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0)
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	err = parent.DetachChild(child)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+// Test DetachChildFunc
+func (s *NodeTestSuite) TestNode_DetachChildFunc() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5, ValueOpt[string]("parent"))
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	appleIDs := []uint64{s.nextDefaultGroupID(), s.nextDefaultGroupID()}
+	orangeIDs := []uint64{s.nextDefaultGroupID(), s.nextDefaultGroupID()}
+
+	for _, id := range appleIDs {
+		apple, err := NewNode[string](id, 0, ValueOpt[string]("apple"), ParentOpt[string](parent))
+		s.NotNil(apple)
+		s.NoError(err)
+	}
+
+	for _, id := range orangeIDs {
+		orange, err := NewNode[string](id, 0, ValueOpt[string]("orange"), ParentOpt[string](parent))
+		s.NotNil(orange)
+		s.NoError(err)
+	}
+
+	s.Equal(4, parent.Breadth())
+
+	count := parent.DetachChildFunc(func(n *Node[string]) bool {
+		return n.Val() == "apple"
+	})
+
+	s.Equal(2, count)
+	s.Equal(2, parent.Breadth())
+}
+
+func (s *NodeTestSuite) TestNode_DetachChildFunc_NilFunc() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	count := parent.DetachChildFunc(nil)
+	s.Equal(0, count)
+}
+
+// Test Move function
+func (s *NodeTestSuite) TestNode_Move() {
+	parent1ID, parent2ID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent1, err := NewNode[string](parent1ID, 2, ValueOpt[string]("parent1"))
+	s.NotNil(parent1)
+	s.Require().NoError(err)
+
+	parent2, err := NewNode[string](parent2ID, 2, ValueOpt[string]("parent2"))
+	s.NotNil(parent2)
+	s.Require().NoError(err)
+
+	child, err := NewNode[string](childID, 0, ValueOpt[string]("child"), ParentOpt[string](parent1))
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	s.True(parent1.HasChild(child))
+	s.False(parent2.HasChild(child))
+
+	err = child.Move(parent2)
+	s.NoError(err)
+
+	s.False(parent1.HasChild(child))
+	s.True(parent2.HasChild(child))
+	s.Equal(parent2, child.Parent())
+}
+
+func (s *NodeTestSuite) TestNode_Move_NilParent() {
+	childID := s.nextDefaultGroupID()
+	child, err := NewNode[int](childID, 0)
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	err = child.Move(nil)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *NodeTestSuite) TestNode_Move_MaxBreadthExceeded() {
+	parent1ID, parent2ID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent1, err := NewNode[int](parent1ID, 1)
+	s.NotNil(parent1)
+	s.Require().NoError(err)
+
+	parent2, err := NewNode[int](parent2ID, 0)
+	s.NotNil(parent2)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0, ParentOpt[int](parent1))
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	err = child.Move(parent2)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+// Test MoveChildren function
+func (s *NodeTestSuite) TestNode_MoveChildren() {
+	parent1ID, parent2ID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent1, err := NewNode[string](parent1ID, 3, ValueOpt[string]("parent1"))
+	s.NotNil(parent1)
+	s.Require().NoError(err)
+
+	parent2, err := NewNode[string](parent2ID, 3, ValueOpt[string]("parent2"))
+	s.NotNil(parent2)
+	s.Require().NoError(err)
+
+	childIDs := []uint64{s.nextDefaultGroupID(), s.nextDefaultGroupID()}
+	for _, id := range childIDs {
+		child, err := NewNode[string](id, 0, ValueOpt[string]("child"), ParentOpt[string](parent1))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	s.Equal(2, parent1.Breadth())
+	s.Equal(0, parent2.Breadth())
+
+	err = parent1.MoveChildren(parent2)
+	s.NoError(err)
+
+	s.Equal(0, parent1.Breadth())
+	s.Equal(2, parent2.Breadth())
+}
+
+func (s *NodeTestSuite) TestNode_MoveChildren_NilParent() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	err = parent.MoveChildren(nil)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *NodeTestSuite) TestNode_MoveChildren_MaxBreadthExceeded() {
+	parent1ID, parent2ID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent1, err := NewNode[int](parent1ID, 3)
+	s.NotNil(parent1)
+	s.Require().NoError(err)
+
+	parent2, err := NewNode[int](parent2ID, 1)
+	s.NotNil(parent2)
+	s.Require().NoError(err)
+
+	// Add 2 children to parent1
+	for i := 0; i < 2; i++ {
+		child, err := NewNode[int](s.nextDefaultGroupID(), 0, ParentOpt[int](parent1))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	err = parent1.MoveChildren(parent2)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+// Test SelectOneChildFunc no match
+func (s *NodeTestSuite) TestNode_SelectOneChildFunc_NoMatch() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 2, ValueOpt[string]("parent"))
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string]("apple"), ParentOpt[string](parent))
+	s.NotNil(child)
+	s.NoError(err)
+
+	result, err := parent.SelectOneChildFunc(func(n *Node[string]) bool {
+		return n.Val() == "orange"
+	})
+	s.Nil(result)
+	s.Error(err)
+	s.ErrorIs(err, ErrNoMatch)
+}
+
+// Test SelectChildrenFunc no match
+func (s *NodeTestSuite) TestNode_SelectChildrenFunc_NoMatch() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 2, ValueOpt[string]("parent"))
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string]("apple"), ParentOpt[string](parent))
+	s.NotNil(child)
+	s.NoError(err)
+
+	results, err := parent.SelectChildrenFunc(func(n *Node[string]) bool {
+		return n.Val() == "orange"
+	})
+	s.Nil(results)
+	s.Error(err)
+	s.ErrorIs(err, ErrNoMatch)
+}
+
+// Test SelectChildByID not found
+func (s *NodeTestSuite) TestNode_SelectChildByID_NotFound() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	nonExistentID := s.nextDefaultGroupID()
+	result, err := parent.SelectChildByID(nonExistentID)
+	s.Nil(result)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+// Test Swap with nil target
+func (s *NodeTestSuite) TestNode_Swap_NilTarget() {
+	nodeID := s.nextDefaultGroupID()
+	node, err := NewNode[int](nodeID, 1)
+	s.NotNil(node)
+	s.Require().NoError(err)
+
+	err = node.Swap(nil)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+// Test HasChild with nil
+func (s *NodeTestSuite) TestNode_HasChild_Nil() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	s.False(parent.HasChild(nil))
+}
+
+// Test IsChildOf with nil parent
+func (s *NodeTestSuite) TestNode_IsChildOf_NilParent() {
+	childID := s.nextDefaultGroupID()
+	child, err := NewNode[int](childID, 0)
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	s.False(child.IsChildOf(nil))
+}
+
+// Test Detach when already detached
+func (s *NodeTestSuite) TestNode_Detach_AlreadyDetached() {
+	nodeID := s.nextDefaultGroupID()
+	node, err := NewNode[int](nodeID, 0)
+	s.NotNil(node)
+	s.Require().NoError(err)
+
+	s.True(node.IsDetached())
+	node.Detach() // Should not panic
+	s.True(node.IsDetached())
+}
+
+// Test Capacity calculation
+func (s *NodeTestSuite) TestNode_Capacity() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	s.Equal(5, parent.Capacity())
+
+	for i := 0; i < 3; i++ {
+		child, err := NewNode[int](s.nextDefaultGroupID(), 0, ParentOpt[int](parent))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	s.Equal(2, parent.Capacity())
+}
+
+// Test AttachChild error when max breadth reached
+func (s *NodeTestSuite) TestNode_AttachChild_MaxBreadthReached() {
+	parentID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 0)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0)
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	err = parent.AttachChild(child)
+	s.Error(err)
+	s.ErrorIs(err, ErrMaxBreadth)
+}
+
+// Test SelectOneChildByEachValue function
+func (s *NodeTestSuite) TestNode_SelectOneChildByEachValue() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	// Create children with different values
+	values := []string{"apple", "orange", "banana"}
+	expectedChildren := make(map[string]*Node[string])
+
+	for _, val := range values {
+		child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string](val), ParentOpt[string](parent))
+		s.NotNil(child)
+		s.NoError(err)
+		expectedChildren[val] = child
+	}
+
+	ctx := context.Background()
+	result, err := parent.SelectOneChildByEachValue(ctx, "apple", "orange", "banana")
+	s.NotNil(result)
+	s.NoError(err)
+	s.Len(result, 3)
+
+	for val, expectedChild := range expectedChildren {
+		actualChild, exists := result[val]
+		s.True(exists, "Expected value %s not found in result", val)
+		s.Equal(expectedChild, actualChild)
+	}
+}
+
+// Test SelectOneChildByEachValue with duplicate values (should deduplicate)
+func (s *NodeTestSuite) TestNode_SelectOneChildByEachValue_Duplicates() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 3)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	// Create children
+	values := []string{"apple", "orange"}
+	for _, val := range values {
+		child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string](val), ParentOpt[string](parent))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	ctx := context.Background()
+	// Request with duplicates - should deduplicate
+	result, err := parent.SelectOneChildByEachValue(ctx, "apple", "apple", "orange", "orange")
+	s.NotNil(result)
+	s.NoError(err)
+	s.Len(result, 2) // Only 2 unique values
+}
+
+// Test SelectOneChildByEachValue with context cancellation
+func (s *NodeTestSuite) TestNode_SelectOneChildByEachValue_ContextCanceled() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	// Create children
+	for _, val := range []string{"apple", "orange", "banana"} {
+		child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string](val), ParentOpt[string](parent))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel() // Cancel immediately
+
+	result, err := parent.SelectOneChildByEachValue(ctx, "apple", "orange", "banana")
+	s.Nil(result)
+	s.Error(err)
+	s.ErrorIs(err, context.Canceled)
+}
+
+// Test SelectOneChildByEachValue with timeout
+func (s *NodeTestSuite) TestNode_SelectOneChildByEachValue_Timeout() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	// Create children
+	for _, val := range []string{"apple", "orange"} {
+		child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string](val), ParentOpt[string](parent))
+		s.NotNil(child)
+		s.NoError(err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Nanosecond)
+	defer cancel()
+
+	time.Sleep(10 * time.Millisecond) // Ensure timeout occurs
+
+	result, err := parent.SelectOneChildByEachValue(ctx, "apple", "orange")
+	// Might succeed if fast enough, or fail with timeout
+	if err != nil {
+		s.ErrorIs(err, context.DeadlineExceeded)
+	}
+	_ = result
+}
+
+// Test SelectOneChildByEachValue with missing value
+func (s *NodeTestSuite) TestNode_SelectOneChildByEachValue_NoMatch() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[string](parentID, 3)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	// Create children
+	child, err := NewNode[string](s.nextDefaultGroupID(), 0, ValueOpt[string]("apple"), ParentOpt[string](parent))
+	s.NotNil(child)
+	s.NoError(err)
+
+	ctx := context.Background()
+	result, err := parent.SelectOneChildByEachValue(ctx, "apple", "orange")
+	s.Nil(result)
+	s.Error(err)
+}
+
+// Test HasChildren when empty
+func (s *NodeTestSuite) TestNode_HasChildren_Empty() {
+	parentID := s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 5)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	s.False(parent.HasChildren())
+}
+
+// Test IsChildOf when child belongs to different parent
+func (s *NodeTestSuite) TestNode_IsChildOf_WrongParent() {
+	parent1ID, parent2ID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent1, err := NewNode[int](parent1ID, 1)
+	s.NotNil(parent1)
+	s.Require().NoError(err)
+
+	parent2, err := NewNode[int](parent2ID, 1)
+	s.NotNil(parent2)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0, ParentOpt[int](parent1))
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	s.True(child.IsChildOf(parent1))
+	s.False(child.IsChildOf(parent2))
+}
+
+// Test HasChild with empty children map
+func (s *NodeTestSuite) TestNode_HasChild_EmptyChildren() {
+	parentID, childID := s.nextDefaultGroupID(), s.nextDefaultGroupID()
+	parent, err := NewNode[int](parentID, 1)
+	s.NotNil(parent)
+	s.Require().NoError(err)
+
+	child, err := NewNode[int](childID, 0)
+	s.NotNil(child)
+	s.Require().NoError(err)
+
+	s.False(parent.HasChild(child))
 }

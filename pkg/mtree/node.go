@@ -1,11 +1,13 @@
 package mtree
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"iter"
 
 	"golang.org/x/exp/slices"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
@@ -29,6 +31,8 @@ type (
 		container  *Container[T]
 		children   map[uint64]*Node[T]
 	}
+
+	NodeSuccessorFunc[T comparable] func(child *Node[T]) bool
 )
 
 func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) (*Node[T], error) {
@@ -268,7 +272,7 @@ func (n *Node[T]) DetachChild(child *Node[T]) error {
 	return nil
 }
 
-func (n *Node[T]) DetachChildFunc(successorFn func(child *Node[T]) bool) int {
+func (n *Node[T]) DetachChildFunc(successorFn NodeSuccessorFunc[T]) int {
 	if successorFn == nil {
 		return 0
 	}
@@ -286,15 +290,14 @@ func (n *Node[T]) DetachChildFunc(successorFn func(child *Node[T]) bool) int {
 	return count
 }
 
-func (n *Node[T]) SelectChildrenFunc(successorFn func(child *Node[T]) bool) ([]*Node[T], error) {
+func (n *Node[T]) SelectChildrenFunc(successorFn NodeSuccessorFunc[T]) ([]*Node[T], error) {
 	nodes := make([]*Node[T], 0, n.maxBreadth)
 	for _, child := range n.children {
 		if ok := successorFn(child); !ok {
 			continue
 		}
 
-		copyChild := *child
-		nodes = append(nodes, &copyChild)
+		nodes = append(nodes, child)
 	}
 
 	switch {
@@ -305,6 +308,67 @@ func (n *Node[T]) SelectChildrenFunc(successorFn func(child *Node[T]) bool) ([]*
 	}
 }
 
+func (n *Node[T]) SelectOneChildFunc(successorFn NodeSuccessorFunc[T]) (*Node[T], error) {
+	for _, child := range n.children {
+		if successorFn(child) {
+			return child, nil
+		}
+	}
+
+	return nil, ErrNoMatch
+}
+
+func (n *Node[T]) SelectOneChildByEachValue(ctx context.Context, values ...T) (map[T]*Node[T], error) {
+	dedup := make(map[T]struct{}, len(values))
+	for _, val := range values {
+		dedup[val] = struct{}{}
+	}
+
+	eg := errgroup.Group{}
+	childCh, errCh := make(chan *Node[T], len(dedup)), make(chan error, 1)
+
+	for val := range dedup {
+		val := val
+		eg.Go(func() error {
+			child, err := n.SelectOneChildFunc(func(n *Node[T]) bool {
+				return n.Val() == val
+			})
+			if err != nil {
+				return err
+			}
+
+			childCh <- child
+
+			return nil
+		})
+	}
+
+	go func() {
+		defer close(errCh)
+
+		if err := eg.Wait(); err != nil {
+			errCh <- err
+		} else {
+			close(childCh)
+		}
+	}()
+
+	res := make(map[T]*Node[T])
+	for {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case child, ok := <-childCh:
+			if !ok {
+				return res, nil
+			}
+			res[child.Val()] = child
+		case err := <-errCh:
+			return nil, err
+		}
+	}
+}
+
 func (n *Node[T]) SelectChildByID(id uint64) (*Node[T], error) {
 	relID := serial.NSum(n.id, id)
 	child, exists := n.children[relID]
@@ -312,9 +376,7 @@ func (n *Node[T]) SelectChildByID(id uint64) (*Node[T], error) {
 		return nil, ErrNodeNotFound
 	}
 
-	copyChild := *child
-
-	return &copyChild, nil
+	return child, nil
 }
 
 func (n *Node[T]) Detach() {
@@ -367,7 +429,6 @@ func (n *Node[T]) Move(newParent *Node[T]) error {
 	return newParent.attach(n)
 }
 
-// Swap swaps two nodes
 func (n *Node[T]) Swap(target *Node[T]) error {
 	if target == nil {
 		return fmt.Errorf("nil target node: %w", ErrNil)
