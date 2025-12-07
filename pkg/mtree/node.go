@@ -17,7 +17,7 @@ const (
 )
 
 type (
-	NodeOption[T comparable] func(n *Node[T])
+	NodeOption[T comparable] func(n *Node[T]) error
 
 	Node[T comparable] struct {
 		id         uint64
@@ -31,7 +31,7 @@ type (
 	}
 )
 
-func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) *Node[T] {
+func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) (*Node[T], error) {
 	n := &Node[T]{
 		id:         id,
 		level:      -1,
@@ -41,40 +41,59 @@ func NewNode[T comparable](id uint64, maxBreadth int, opts ...NodeOption[T]) *No
 		children:   make(map[uint64]*Node[T], maxBreadth),
 	}
 	for _, opt := range opts {
-		opt(n)
+		if err := opt(n); err != nil {
+			return nil, err
+		}
 	}
 
-	return n
+	return n, nil
 }
 
 func ValueOpt[T comparable](val T) NodeOption[T] {
-	return func(n *Node[T]) {
-		n.val = val
+	return func(n *Node[T]) error {
+		n.WithValue(val)
+
+		return nil
 	}
 }
 
 func LevelOpt[T comparable](level int) NodeOption[T] {
-	return func(n *Node[T]) {
+	return func(n *Node[T]) error {
 		n.level = level
+
+		return nil
 	}
 }
 
 func ParentOpt[T comparable](parent *Node[T]) NodeOption[T] {
-	return func(n *Node[T]) {
-		n.parent = parent
+	return func(n *Node[T]) error {
+		if parent == nil {
+			return ErrNil
+		}
+
+		if err := parent.AttachChild(n); err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 
 func ChildOpt[T comparable](child *Node[T]) NodeOption[T] {
-	return func(n *Node[T]) {
-		if n == nil {
-			return
+	return func(n *Node[T]) error {
+		if child == nil {
+			return ErrNil
 		}
 
-		child.parent = n
-		n.children[serial.NSum(n.id, child.id)] = child
-		child.level = n.level + 1
-		child.state = attached
+		if n.level < 0 {
+			n.level = 0
+		}
+
+		if err := n.AttachChild(child); err != nil {
+			return err
+		}
+
+		return nil
 	}
 }
 
@@ -223,7 +242,7 @@ func (n *Node[T]) AttachMany(children ...*Node[T]) error {
 	return nil
 }
 
-func (n *Node[T]) Children() iter.Seq2[uint64, *Node[T]] {
+func (n *Node[T]) ChildrenIter() iter.Seq2[uint64, *Node[T]] {
 	return func(yield func(uint64, *Node[T]) bool) {
 		for id, child := range n.children {
 			if !yield(id, child) {
@@ -348,34 +367,34 @@ func (n *Node[T]) Move(newParent *Node[T]) error {
 	return newParent.attach(n)
 }
 
+// Swap swaps two nodes
 func (n *Node[T]) Swap(target *Node[T]) error {
 	if target == nil {
 		return fmt.Errorf("nil target node: %w", ErrNil)
 	}
 
+	parent := n.parent
 	targetParent := target.parent
 
+	n.Detach()
+	target.Detach()
+
 	if target.IsRoot() {
-		n.Detach()
 		n.asRoot()
+	}
+	if n.IsRoot() {
+		target.asRoot()
 	}
 
 	if targetParent != nil {
-		n.Detach()
 		if err := targetParent.attach(n); err != nil {
 			return err
 		}
 	}
 
-	if n.IsRoot() {
+	if parent != nil {
 		target.Detach()
-		target.asRoot()
-	}
-
-	sourceParent := n.parent
-	if sourceParent != nil {
-		target.Detach()
-		if err := sourceParent.attach(target); err != nil {
+		if err := parent.attach(target); err != nil {
 			return err
 		}
 	}
@@ -394,5 +413,5 @@ func (n *Node[T]) IsDetached() bool {
 }
 
 func (n *Node[T]) Capacity() int {
-	return n.maxBreadth - len(n.children)
+	return n.MaxBreadth() - n.Breadth()
 }

@@ -66,7 +66,7 @@ func (c *Container[T]) Contains(n *Node[T]) bool {
 	return c.contains(n.ID())
 }
 
-func (c *Container[T]) CurrentDepth() int {
+func (c *Container[T]) Depth() int {
 	var d int
 	for level := range c.levels {
 		if level > d {
@@ -124,7 +124,7 @@ func (c *Container[T]) Delete(n *Node[T]) error {
 	return nil
 }
 
-func (c *Container[T]) Nodes(level int) iter.Seq[*Node[T]] {
+func (c *Container[T]) NodesIter(level int) iter.Seq[*Node[T]] {
 	return func(yield func(*Node[T]) bool) {
 		ids, exists := c.levels[level]
 		if !exists {

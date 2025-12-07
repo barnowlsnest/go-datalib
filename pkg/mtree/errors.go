@@ -5,9 +5,11 @@ import (
 )
 
 var (
-	ErrNodeConflict = errors.New("node conflict err")
-	ErrNodeNotFound = errors.New("node not found err")
-	ErrNoMatch      = errors.New("no node match err")
-	ErrNil          = errors.New("nil err")
-	ErrMaxBreadth   = errors.New("max breadth err")
+	ErrNodeConflict    = errors.New("node conflict err")
+	ErrNodeNotFound    = errors.New("node not found err")
+	ErrNoMatch         = errors.New("no node match err")
+	ErrNil             = errors.New("nil err")
+	ErrMaxBreadth      = errors.New("max breadth err")
+	ErrRootTagNotFound = errors.New("err root tag not found")
+	ErrHierarchyModel  = errors.New("invalid hierarchy model")
 )
