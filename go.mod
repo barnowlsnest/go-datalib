@@ -1,4 +1,4 @@
-module github.com/dshlychkou/go-datalib
+module github.com/barnowlsnest/go-datalib
 
 go 1.25
 
