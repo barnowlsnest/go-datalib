@@ -48,7 +48,6 @@ type (
 		state      int
 		val        T
 		parent     *Node[T]
-		container  *Container[T]
 		children   map[uint64]*Node[T]
 	}
 
@@ -145,10 +144,6 @@ func (n *Node[T]) verifyMaxBreadth(count int) error {
 	}
 
 	return nil
-}
-
-func (n *Node[T]) associate(container *Container[T]) {
-	n.container = container
 }
 
 func (n *Node[T]) asRoot() bool {
