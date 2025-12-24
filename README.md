@@ -111,6 +111,7 @@ edgeHash := serial.NSum(nodeA, nodeB)
 
 ```go
 import (
+	"fmt"
 	"github.com/barnowlsnest/go-datalib/pkg/tree"
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
@@ -118,7 +119,7 @@ import (
 // Create a new BST
 bst := tree.NewBST[int]()
 
-// Insert values
+// Insert values (node, value)
 bst.Insert(node.New(1, nil, nil), 50)
 bst.Insert(node.New(2, nil, nil), 30)
 bst.Insert(node.New(3, nil, nil), 70)
@@ -126,13 +127,23 @@ bst.Insert(node.New(4, nil, nil), 20)
 bst.Insert(node.New(5, nil, nil), 40)
 
 // Search for a value
-found, exists := bst.Search(30)  // Returns node and true
+found := bst.Search(30)  // Returns *BinaryNode[int] or nil
 
 // Delete a value
 deleted := bst.Delete(30)  // Returns true if deleted
 
 // Traverse the tree (in-order, pre-order, post-order, level-order)
-nodes := bst.InOrder()  // Returns [20, 30, 40, 50, 70]
+bst.InOrder(func(n *tree.BinaryNode[int]) {
+	fmt.Println(n.Value())  // Prints: 20, 30, 40, 50, 70
+})
+
+// Get min/max values
+min := bst.Min()  // Returns node with value 20
+max := bst.Max()  // Returns node with value 70
+
+// Check tree properties
+size := bst.Size()      // Number of nodes
+height := bst.Height()  // Tree height
 ```
 
 ### Heap (Min/Max Binary Heap)
@@ -229,60 +240,67 @@ predecessors := g.GetBackRefs(task3.ID)   // Returns [task2]
 
 ```go
 import (
-	mtree "github.com/barnowlsnest/go-datalib/pkg/tree"
+	"context"
+	"github.com/barnowlsnest/go-datalib/pkg/tree"
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
 // Create nodes with maximum breadth (max children)
-root, _ := mtree.NewNode[string](1, 5, mtree.ValueOpt("CEO"))
-root.asRoot() // Mark as root node
+root, _ := tree.NewNode[string](1, 5, tree.ValueOpt("CEO"))
 
-engineering, _ := mtree.NewNode[string](2, 3,
-	mtree.ValueOpt("Engineering"),
-	mtree.ParentOpt(root),
+// Attach children using ParentOpt during creation
+engineering, _ := tree.NewNode[string](2, 3,
+	tree.ValueOpt("Engineering"),
+	tree.ParentOpt(root),
 )
 
-sales, _ := mtree.NewNode[string](3, 3,
-	mtree.ValueOpt("Sales"),
-	mtree.ParentOpt(root),
+sales, _ := tree.NewNode[string](3, 3,
+	tree.ValueOpt("Sales"),
+	tree.ParentOpt(root),
 )
+
+// Or attach children manually
+backend, _ := tree.NewNode[string](4, 0, tree.ValueOpt("Backend"))
+engineering.AttachChild(backend)
 
 // Query operations
-children, _ := root.SelectChildrenFunc(func(n *mtree.Node[string]) bool {
+children, _ := root.SelectChildrenFunc(func(n *tree.Node[string]) bool {
 	return n.Val() == "Engineering"
 })
 
+// Select single child by predicate
+eng, _ := root.SelectOneChildFunc(func(n *tree.Node[string]) bool {
+	return n.Val() == "Engineering"
+})
+
+// Concurrent child selection by multiple values
+ctx := context.Background()
+selected, _ := root.SelectOneChildByEachValue(ctx, "Engineering", "Sales")
+
 // Build from model with cycle detection
-model := mtree.HierarchyModel{
-	mtree.RootTag: {"Company"},
+model := tree.HierarchyModel{
+	tree.RootTag: {"Company"},
 	"Company":     {"Engineering", "Sales"},
 	"Engineering": {"Frontend", "Backend"},
 }
 idGen := func() uint64 { return serial.Seq().Next("company") }
-tree, err := mtree.Hierarchy(model, 10, idGen)
+rootNode, err := tree.Hierarchy(model, 10, idGen)
 if err != nil {
 	// Handles cycles: A→B→A will return error
 	panic(err)
 }
 
 // Convert back to model
-modelCopy, _ := mtree.ToModel(tree)
+modelCopy, _ := tree.ToModel(rootNode)
 
-// Use Container for bounded trees with level tracking
-root2, _ := mtree.NewNode[string](serial.Seq().Next("org"), 5, mtree.ValueOpt("root"))
-container, _ := mtree.NewContainer(root2, 5, 10)  // Max 5 children, 10 levels deep
-
-child1, _ := mtree.NewNode[string](serial.Seq().Next("org"), 5, mtree.ValueOpt("child1"))
-container.Insert(child1, false)
-
-// Iterate nodes at specific level
-for node := range container.NodesIter(1) {
-	fmt.Println(node.Val())
-}
-
-// Check container status
-fmt.Printf("Size: %d, Depth: %d, Capacity: %d\n",
-	container.Size(), container.Depth(), container.Capacity())
+// Node operations
+backend.Detach()                    // Detach from parent
+backend.Move(sales)                 // Move to new parent
+engineering.MoveChildren(sales)     // Move all children to new parent
+root.DetachChild(sales)             // Detach specific child
+root.DetachChildFunc(func(n *tree.Node[string]) bool {
+	return n.Val() == "Sales"       // Detach children matching predicate
+})
 ```
 
 ## Performance
