@@ -229,7 +229,7 @@ predecessors := g.GetBackRefs(task3.ID)   // Returns [task2]
 
 ```go
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/mtree"
+	mtree "github.com/barnowlsnest/go-datalib/pkg/tree"
 	"github.com/barnowlsnest/go-datalib/pkg/serial"
 )
 
@@ -313,16 +313,16 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 
 ### Complexity Summary
 
-| Data Structure | Insert | Delete | Search/Query | Space |
-|---------------|--------|--------|--------------|-------|
-| LinkedList | O(1) | O(1) | O(n) | O(n) |
-| Stack | O(1) | O(1) | O(1) peek | O(n) |
-| Queue | O(1) | O(1) | O(1) peek | O(n) |
-| BST | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(n) |
-| Heap | O(log n) | O(log n) | O(1) peek | O(n) |
-| Fenwick Tree | O(log n) | N/A | O(log n) | O(n) |
-| MTree | O(1) attach | O(1) detach | O(n) traversal | O(n) |
-| DAG | O(1) | O(1) | O(V+E) cycle detection | O(V+E) |
+| Data Structure | Insert                   | Delete                   | Search/Query             | Space  |
+|----------------|--------------------------|--------------------------|--------------------------|--------|
+| LinkedList     | O(1)                     | O(1)                     | O(n)                     | O(n)   |
+| Stack          | O(1)                     | O(1)                     |  O(1) peek               | O(n)   |
+| Queue          | O(1)                     | O(1)                     | O(1) peek                | O(n)   |
+| BST            | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(n)   |
+| Heap           | O(log n)                 | O(log n)                 | O(1) peek                | O(n)   |
+| Fenwick Tree   | O(log n)                 | N/A                      | O(log n)                 | O(n)   |
+| MTree          | O(1) attach              | O(1) detach              | O(n) traversal           | O(n)   |
+| DAG            | O(1)                     | O(1)                     | O(V+E) cycle detection   | O(V+E) |
 
 ### Performance Optimizations
 
