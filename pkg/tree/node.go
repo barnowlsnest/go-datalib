@@ -9,7 +9,7 @@
 //   - Concurrent-safe node selection with context support
 //   - Hierarchy model builder with cycle detection
 //   - Node swapping and movement operations
-package mtree
+package tree
 
 import (
 	"context"

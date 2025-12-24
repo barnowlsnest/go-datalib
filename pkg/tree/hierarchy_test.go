@@ -1,4 +1,4 @@
-package mtree
+package tree
 
 import (
 	"testing"
