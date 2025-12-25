@@ -19,7 +19,6 @@ type (
 		id         uint64
 		maxDepth   int
 		maxBreadth int
-		height     int
 		cap        int
 		root       *Node[T]
 		levelMap   map[int][]uint64
@@ -74,7 +73,6 @@ func NewSegment[T comparable](alias string, id uint64, maxBreadth, maxDepth int)
 		maxDepth:   mDepth,
 		maxBreadth: mBreadth,
 		cap:        mDepth * mBreadth,
-		height:     0,
 		levelMap:   make(map[int][]uint64, mDepth),
 		nodeMap:    make(map[uint64]*Node[T]),
 	}
