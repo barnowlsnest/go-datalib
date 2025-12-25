@@ -26,6 +26,13 @@ type (
 		nodeMap    map[uint64]*Node[T]
 	}
 
+	Selector[T comparable] struct {
+		Type  string
+		ID    uint64
+		Level int
+		Limit int
+	}
+
 	VisitorFunc[T comparable] func(n *Node[T]) bool
 
 	traverser interface {
@@ -114,7 +121,7 @@ func (s *Segment[T]) NodeByID(id uint64) (*Node[T], error) {
 	return n, nil
 }
 
-func (s *Segment[T]) NodesAtLevel(level int) ([]*Node[T], error) {
+func (s *Segment[T]) nodesAtLevel(level int) ([]*Node[T], error) {
 	nodes, existsLevel := s.levelMap[level]
 	if !existsLevel {
 		return nil, ErrSegmentLevelNotFound
@@ -204,4 +211,19 @@ func (s *Segment[T]) DFS(visitor VisitorFunc[T]) error {
 
 func (s *Segment[T]) BFS(visitor VisitorFunc[T]) error {
 	return s.traverse(&queueTraverser{queue: list.NewQueue()}, visitor)
+}
+
+func (s *Segment[T]) ForEachNodeAtLevel(level int, visitor VisitorFunc[T]) error {
+	nodes, err := s.nodesAtLevel(level)
+	if err != nil {
+		return err
+	}
+
+	for _, n := range nodes {
+		if !visitor(n) {
+			break
+		}
+	}
+
+	return nil
 }
