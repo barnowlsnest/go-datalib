@@ -58,9 +58,13 @@ func NewSegment[T comparable](alias string, id uint64, maxBreadth, maxDepth int)
 	)
 	if maxDepth <= 0 {
 		mDepth = DefaultMaxDepth
+	} else {
+		mDepth = maxDepth
 	}
 	if maxBreadth <= 0 {
 		mBreadth = DefaultMaxBreadth
+	} else {
+		mBreadth = maxBreadth
 	}
 
 	mAlias = strings.ReplaceAll(alias, " ", "")
