@@ -272,11 +272,12 @@ func (s *Segment[T]) Insert(n *Node[T], parentID uint64) error {
 	// Auto-root: if segment is empty and no parent specified, make this the root
 	if s.root == nil && parentID == 0 {
 		if !n.asRoot() {
-			// Force root state if node was previously attached elsewhere
+			// Node was previously attached elsewhere, detach first then try again
 			n.Detach()
-			n.state = root
-			n.level = 0
-			n.parent = nil
+			if !n.asRoot() {
+				// This should not happen after Detach(), but handle defensively
+				return fmt.Errorf("cannot set node as root: %w", ErrNil)
+			}
 		}
 		s.root = n
 		s.nodeMap[n.ID()] = n
@@ -398,11 +399,11 @@ func (s *Segment[T]) RemovePromote(id uint64) error {
 
 			// Update descendant levels and add to new level map
 			// AttachChild only updates the direct child, we need to recursively update descendants
-			var updateAndAddLevels func(node *Node[T], newLevel int)
-			updateAndAddLevels = func(node *Node[T], newLevel int) {
-				node.level = newLevel
-				s.addToLevelMap(newLevel, node.ID())
-				for _, ch := range node.children {
+			var updateAndAddLevels func(treeNode *Node[T], newLevel int)
+			updateAndAddLevels = func(treeNode *Node[T], newLevel int) {
+				treeNode.setLevel(newLevel)
+				s.addToLevelMap(newLevel, treeNode.ID())
+				for _, ch := range treeNode.children {
 					updateAndAddLevels(ch, newLevel+1)
 				}
 			}
@@ -473,11 +474,11 @@ func (s *Segment[T]) Link(parentID, childID uint64) error {
 
 	// Update descendant levels and add to new level map
 	// AttachChild only updates the direct child, we need to recursively update descendants
-	var updateAndAddLevels func(node *Node[T], newLevel int)
-	updateAndAddLevels = func(node *Node[T], newLevel int) {
-		node.level = newLevel
-		s.addToLevelMap(newLevel, node.ID())
-		for _, ch := range node.children {
+	var updateAndAddLevels func(treeNode *Node[T], newLevel int)
+	updateAndAddLevels = func(treeNode *Node[T], newLevel int) {
+		treeNode.setLevel(newLevel)
+		s.addToLevelMap(newLevel, treeNode.ID())
+		for _, ch := range treeNode.children {
 			updateAndAddLevels(ch, newLevel+1)
 		}
 	}
@@ -523,7 +524,7 @@ func (s *Segment[T]) Unlink(parentID, childID uint64) error {
 }
 
 // Select returns all nodes matching the predicate function.
-func (s *Segment[T]) Select(predicate func(*Node[T]) bool) []*Node[T] {
+func (s *Segment[T]) Select(predicate VisitorFunc[T]) []*Node[T] {
 	result := make([]*Node[T], 0)
 	for _, n := range s.nodeMap {
 		if predicate(n) {
@@ -534,7 +535,7 @@ func (s *Segment[T]) Select(predicate func(*Node[T]) bool) []*Node[T] {
 }
 
 // SelectAtLevel returns all nodes at the specified level matching the predicate.
-func (s *Segment[T]) SelectAtLevel(level int, predicate func(*Node[T]) bool) ([]*Node[T], error) {
+func (s *Segment[T]) SelectAtLevel(level int, predicate VisitorFunc[T]) ([]*Node[T], error) {
 	nodes, err := s.nodesAtLevel(level)
 	if err != nil {
 		return nil, err
@@ -550,7 +551,7 @@ func (s *Segment[T]) SelectAtLevel(level int, predicate func(*Node[T]) bool) ([]
 }
 
 // SelectOne returns the first node matching the predicate, or error if none found.
-func (s *Segment[T]) SelectOne(predicate func(*Node[T]) bool) (*Node[T], error) {
+func (s *Segment[T]) SelectOne(predicate VisitorFunc[T]) (*Node[T], error) {
 	for _, n := range s.nodeMap {
 		if predicate(n) {
 			return n, nil

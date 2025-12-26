@@ -25,6 +25,15 @@ func (s *SegmentTestSuite) nextID() uint64 {
 	return s.seq.Next("segment_test")
 }
 
+// createAndInsert creates a node with the given value and inserts it into the segment.
+// If parentID is 0, the node becomes the root.
+func (s *SegmentTestSuite) createAndInsert(seg *Segment[string], value string, parentID uint64) *Node[string] {
+	node, err := NewNode[string](s.nextID(), 5, ValueOpt(value))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(node, parentID))
+	return node
+}
+
 // buildTestSegment creates a segment with a tree structure for testing.
 // Tree structure:
 //
@@ -37,26 +46,10 @@ func (s *SegmentTestSuite) buildTestSegment() (seg *Segment[string], nodes map[s
 	seg = NewSegment[string]("test", s.nextID(), 5, 5)
 	nodes = make(map[string]*Node[string])
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(root, 0))
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child1, root.ID()))
-
-	child2, err := NewNode[string](s.nextID(), 5, ValueOpt("child2"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child2, root.ID()))
-
-	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(grandchild, child1.ID()))
-
-	nodes["root"] = root
-	nodes["child1"] = child1
-	nodes["child2"] = child2
-	nodes["grandchild"] = grandchild
+	nodes["root"] = s.createAndInsert(seg, "root", 0)
+	nodes["child1"] = s.createAndInsert(seg, "child1", nodes["root"].ID())
+	nodes["child2"] = s.createAndInsert(seg, "child2", nodes["root"].ID())
+	nodes["grandchild"] = s.createAndInsert(seg, "grandchild", nodes["child1"].ID())
 
 	return seg, nodes
 }
@@ -600,21 +593,10 @@ func (s *SegmentTestSuite) TestSegment_RemovePromote_WithDeepDescendants() {
 	// Build a deeper tree: root -> child1 -> grandchild -> greatgrandchild
 	seg := NewSegment[string]("test", s.nextID(), 5, 10)
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(root, 0))
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child1, root.ID()))
-
-	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(grandchild, child1.ID()))
-
-	greatgrandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("greatgrandchild"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(greatgrandchild, grandchild.ID()))
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	grandchild := s.createAndInsert(seg, "grandchild", child1.ID())
+	greatgrandchild := s.createAndInsert(seg, "greatgrandchild", grandchild.ID())
 
 	// Verify initial state
 	s.Len(seg.levelMap[0], 1) // root
@@ -623,7 +605,7 @@ func (s *SegmentTestSuite) TestSegment_RemovePromote_WithDeepDescendants() {
 	s.Len(seg.levelMap[3], 1) // greatgrandchild
 
 	// Remove child1 - should promote grandchild (and its descendants) to root
-	err = seg.RemovePromote(child1.ID())
+	err := seg.RemovePromote(child1.ID())
 	s.NoError(err)
 
 	// Verify nodes
@@ -678,20 +660,12 @@ func (s *SegmentTestSuite) TestSegment_RemovePromote_NotFound() {
 func (s *SegmentTestSuite) TestSegment_Link_Basic() {
 	seg := NewSegment[string]("test", s.nextID(), 5, 5)
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(root, 0))
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child1, root.ID()))
-
-	child2, err := NewNode[string](s.nextID(), 5, ValueOpt("child2"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child2, root.ID()))
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
 
 	// Link child2 as child of child1
-	err = seg.Link(child1.ID(), child2.ID())
+	err := seg.Link(child1.ID(), child2.ID())
 	s.NoError(err)
 
 	s.True(child2.IsChildOf(child1))
@@ -867,21 +841,10 @@ func (s *SegmentTestSuite) TestSegment_SelectOne_NoMatch() {
 func (s *SegmentTestSuite) TestSegment_Insert_MapsConsistency() {
 	seg := NewSegment[string]("test", s.nextID(), 5, 5)
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(root, 0))
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child1, root.ID()))
-
-	child2, err := NewNode[string](s.nextID(), 5, ValueOpt("child2"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child2, root.ID()))
-
-	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(grandchild, child1.ID()))
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
+	grandchild := s.createAndInsert(seg, "grandchild", child1.ID())
 
 	// Verify nodeMap
 	s.Equal(4, len(seg.nodeMap))
@@ -925,20 +888,12 @@ func (s *SegmentTestSuite) TestSegment_RemoveCascade_MapsConsistency() {
 func (s *SegmentTestSuite) TestSegment_Link_MapsConsistency() {
 	seg := NewSegment[string]("test", s.nextID(), 5, 5)
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(root, 0))
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child1, root.ID()))
-
-	child2, err := NewNode[string](s.nextID(), 5, ValueOpt("child2"))
-	s.Require().NoError(err)
-	s.Require().NoError(seg.Insert(child2, root.ID()))
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
 
 	// Move child2 under child1
-	err = seg.Link(child1.ID(), child2.ID())
+	err := seg.Link(child1.ID(), child2.ID())
 	s.NoError(err)
 
 	// Verify levelMap updated correctly
