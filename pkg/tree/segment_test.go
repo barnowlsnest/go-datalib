@@ -588,6 +588,56 @@ func (s *SegmentTestSuite) TestSegment_RemovePromote_MiddleNode() {
 	s.NoError(err)
 	s.True(grandchild.IsChildOf(nodes["root"]))
 	s.Equal(1, grandchild.Level())
+
+	// Verify levelMap is correctly updated
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 2) // child2 + grandchild (promoted)
+	_, hasLevel2 := seg.levelMap[2]
+	s.False(hasLevel2) // level 2 should be empty/deleted
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_WithDeepDescendants() {
+	// Build a deeper tree: root -> child1 -> grandchild -> greatgrandchild
+	seg := NewSegment[string]("test", s.nextID(), 5, 10)
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(child1, root.ID()))
+
+	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(grandchild, child1.ID()))
+
+	greatgrandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("greatgrandchild"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(greatgrandchild, grandchild.ID()))
+
+	// Verify initial state
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 1) // child1
+	s.Len(seg.levelMap[2], 1) // grandchild
+	s.Len(seg.levelMap[3], 1) // greatgrandchild
+
+	// Remove child1 - should promote grandchild (and its descendants) to root
+	err = seg.RemovePromote(child1.ID())
+	s.NoError(err)
+
+	// Verify nodes
+	s.Equal(3, seg.Length())
+	s.Equal(1, grandchild.Level())
+	s.Equal(2, greatgrandchild.Level())
+	s.True(grandchild.IsChildOf(root))
+
+	// Verify levelMap is correctly updated - no stale entries
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 1) // grandchild (promoted from level 2)
+	s.Len(seg.levelMap[2], 1) // greatgrandchild (promoted from level 3)
+	_, hasLevel3 := seg.levelMap[3]
+	s.False(hasLevel3) // level 3 should be empty/deleted
 }
 
 func (s *SegmentTestSuite) TestSegment_RemovePromote_RootWithChildren() {

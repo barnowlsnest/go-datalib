@@ -368,25 +368,45 @@ func (s *Segment[T]) RemovePromote(id uint64) error {
 
 	// Promote children to parent
 	if parent != nil && n.HasChildren() {
-		// Update levels for all descendants
-		var updateLevels func(node *Node[T], levelDelta int)
-		updateLevels = func(node *Node[T], levelDelta int) {
-			oldLevel := node.Level()
-			s.removeFromLevelMap(oldLevel, node.ID())
-			node.level = oldLevel + levelDelta
-			s.addToLevelMap(node.Level(), node.ID())
-			for _, child := range node.children {
-				updateLevels(child, levelDelta)
+		// Collect children and their old levels BEFORE detaching
+		type childInfo struct {
+			child    *Node[T]
+			oldLevel int
+		}
+		var collectOldLevels func(node *Node[T]) []childInfo
+		collectOldLevels = func(node *Node[T]) []childInfo {
+			result := []childInfo{{child: node, oldLevel: node.Level()}}
+			for _, ch := range node.children {
+				result = append(result, collectOldLevels(ch)...)
 			}
+			return result
 		}
 
 		for _, child := range n.children {
+			// Collect old levels before any modifications
+			oldLevels := collectOldLevels(child)
+
 			child.Detach()
 			if err := parent.AttachChild(child); err != nil {
 				return err
 			}
-			// Update level map for child and its descendants (level decreased by 1)
-			updateLevels(child, 0) // AttachChild already set correct level, just update map
+
+			// Remove from old level map entries
+			for _, info := range oldLevels {
+				s.removeFromLevelMap(info.oldLevel, info.child.ID())
+			}
+
+			// Update descendant levels and add to new level map
+			// AttachChild only updates the direct child, we need to recursively update descendants
+			var updateAndAddLevels func(node *Node[T], newLevel int)
+			updateAndAddLevels = func(node *Node[T], newLevel int) {
+				node.level = newLevel
+				s.addToLevelMap(newLevel, node.ID())
+				for _, ch := range node.children {
+					updateAndAddLevels(ch, newLevel+1)
+				}
+			}
+			updateAndAddLevels(child, child.Level())
 		}
 	}
 
@@ -451,15 +471,17 @@ func (s *Segment[T]) Link(parentID, childID uint64) error {
 		s.removeFromLevelMap(info.oldLevel, info.node.ID())
 	}
 
-	// Add to new levels (recalculate based on new position)
-	var addToNewLevels func(node *Node[T])
-	addToNewLevels = func(node *Node[T]) {
-		s.addToLevelMap(node.Level(), node.ID())
+	// Update descendant levels and add to new level map
+	// AttachChild only updates the direct child, we need to recursively update descendants
+	var updateAndAddLevels func(node *Node[T], newLevel int)
+	updateAndAddLevels = func(node *Node[T], newLevel int) {
+		node.level = newLevel
+		s.addToLevelMap(newLevel, node.ID())
 		for _, ch := range node.children {
-			addToNewLevels(ch)
+			updateAndAddLevels(ch, newLevel+1)
 		}
 	}
-	addToNewLevels(child)
+	updateAndAddLevels(child, child.Level())
 
 	// If child was root, clear segment root
 	if wasRoot {
