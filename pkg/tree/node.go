@@ -173,6 +173,12 @@ func (n *Node[T]) Level() int {
 	return n.level
 }
 
+// setLevel sets the node's level. Package-private method for use by Segment
+// when updating levels after structural changes.
+func (n *Node[T]) setLevel(level int) {
+	n.level = level
+}
+
 func (n *Node[T]) Val() T {
 	return n.val
 }

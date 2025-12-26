@@ -25,6 +25,15 @@ func (s *SegmentTestSuite) nextID() uint64 {
 	return s.seq.Next("segment_test")
 }
 
+// createAndInsert creates a node with the given value and inserts it into the segment.
+// If parentID is 0, the node becomes the root.
+func (s *SegmentTestSuite) createAndInsert(seg *Segment[string], value string, parentID uint64) *Node[string] {
+	node, err := NewNode[string](s.nextID(), 5, ValueOpt(value))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(node, parentID))
+	return node
+}
+
 // buildTestSegment creates a segment with a tree structure for testing.
 // Tree structure:
 //
@@ -37,32 +46,10 @@ func (s *SegmentTestSuite) buildTestSegment() (seg *Segment[string], nodes map[s
 	seg = NewSegment[string]("test", s.nextID(), 5, 5)
 	nodes = make(map[string]*Node[string])
 
-	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"), LevelOpt[string](0))
-	s.Require().NoError(err)
-
-	child1, err := NewNode[string](s.nextID(), 5, ValueOpt("child1"), ParentOpt(root))
-	s.Require().NoError(err)
-
-	child2, err := NewNode[string](s.nextID(), 5, ValueOpt("child2"), ParentOpt(root))
-	s.Require().NoError(err)
-
-	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"), ParentOpt(child1))
-	s.Require().NoError(err)
-
-	seg.root = root
-	seg.nodeMap[root.ID()] = root
-	seg.nodeMap[child1.ID()] = child1
-	seg.nodeMap[child2.ID()] = child2
-	seg.nodeMap[grandchild.ID()] = grandchild
-
-	seg.levelMap[0] = []uint64{root.ID()}
-	seg.levelMap[1] = []uint64{child1.ID(), child2.ID()}
-	seg.levelMap[2] = []uint64{grandchild.ID()}
-
-	nodes["root"] = root
-	nodes["child1"] = child1
-	nodes["child2"] = child2
-	nodes["grandchild"] = grandchild
+	nodes["root"] = s.createAndInsert(seg, "root", 0)
+	nodes["child1"] = s.createAndInsert(seg, "child1", nodes["root"].ID())
+	nodes["child2"] = s.createAndInsert(seg, "child2", nodes["root"].ID())
+	nodes["grandchild"] = s.createAndInsert(seg, "grandchild", nodes["child1"].ID())
 
 	return seg, nodes
 }
@@ -380,4 +367,541 @@ func (s *SegmentTestSuite) TestSegment_nodesAtLevel_NodeNotInMap() {
 	s.Error(err)
 	s.ErrorIs(err, ErrSegmentDoesNotHaveNode)
 	s.Nil(nodes)
+}
+
+// ============================================================================
+// Insert Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_Insert_RootAutomatic() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(root, 0)
+	s.NoError(err)
+
+	s.Equal(1, seg.Length())
+	s.Equal(1, seg.Height())
+	gotRoot, ok := seg.Root()
+	s.True(ok)
+	s.Equal(root, gotRoot)
+	s.Equal(0, root.Level())
+	s.True(root.IsRoot())
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_Child() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(child, root.ID())
+	s.NoError(err)
+
+	s.Equal(2, seg.Length())
+	s.Equal(2, seg.Height())
+	s.Equal(1, child.Level())
+	s.True(child.IsChildOf(root))
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_NilNode() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	err := seg.Insert(nil, 0)
+	s.Error(err)
+	s.ErrorIs(err, ErrNil)
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_AlreadyInSegment() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	err = seg.Insert(root, 0)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeAlreadyInSegment)
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_NoParentInNonEmptySegment() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(child, 0)
+	s.Error(err)
+	s.ErrorIs(err, ErrParentNotInSegment)
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_ParentNotInSegment() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(child, 99999)
+	s.Error(err)
+	s.ErrorIs(err, ErrParentNotInSegment)
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_MaxDepthExceeded() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 2) // max depth of 2
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(child, root.ID()))
+
+	grandchild, err := NewNode[string](s.nextID(), 5, ValueOpt("grandchild"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(grandchild, child.ID())
+	s.Error(err)
+	s.ErrorIs(err, ErrSegmentMaxDepth)
+}
+
+func (s *SegmentTestSuite) TestSegment_Insert_CapacityExceeded() {
+	seg := NewSegment[string]("test", s.nextID(), 1, 1) // capacity of 1
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+
+	err = seg.Insert(child, root.ID())
+	s.Error(err)
+	s.ErrorIs(err, ErrSegmentFull)
+}
+
+// ============================================================================
+// RemoveCascade Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_RemoveCascade_SingleNode() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	err = seg.RemoveCascade(root.ID())
+	s.NoError(err)
+
+	s.Equal(0, seg.Length())
+	s.Equal(0, seg.Height())
+	gotRoot, ok := seg.Root()
+	s.False(ok)
+	s.Nil(gotRoot)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemoveCascade_WithDescendants() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemoveCascade(nodes["child1"].ID())
+	s.NoError(err)
+
+	// child1 and grandchild should be removed
+	s.Equal(2, seg.Length()) // root and child2 remain
+	_, err = seg.NodeByID(nodes["child1"].ID())
+	s.ErrorIs(err, ErrNodeNotFound)
+	_, err = seg.NodeByID(nodes["grandchild"].ID())
+	s.ErrorIs(err, ErrNodeNotFound)
+
+	// root and child2 should still be there
+	_, err = seg.NodeByID(nodes["root"].ID())
+	s.NoError(err)
+	_, err = seg.NodeByID(nodes["child2"].ID())
+	s.NoError(err)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemoveCascade_Root() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemoveCascade(nodes["root"].ID())
+	s.NoError(err)
+
+	s.Equal(0, seg.Length())
+	s.Equal(0, seg.Height())
+	gotRoot, ok := seg.Root()
+	s.False(ok)
+	s.Nil(gotRoot)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemoveCascade_NotFound() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	err := seg.RemoveCascade(99999)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+// ============================================================================
+// RemovePromote Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_LeafNode() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemovePromote(nodes["grandchild"].ID())
+	s.NoError(err)
+
+	s.Equal(3, seg.Length())
+	_, err = seg.NodeByID(nodes["grandchild"].ID())
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_MiddleNode() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemovePromote(nodes["child1"].ID())
+	s.NoError(err)
+
+	s.Equal(3, seg.Length())
+	_, err = seg.NodeByID(nodes["child1"].ID())
+	s.ErrorIs(err, ErrNodeNotFound)
+
+	// grandchild should be promoted to root's children
+	grandchild, err := seg.NodeByID(nodes["grandchild"].ID())
+	s.NoError(err)
+	s.True(grandchild.IsChildOf(nodes["root"]))
+	s.Equal(1, grandchild.Level())
+
+	// Verify levelMap is correctly updated
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 2) // child2 + grandchild (promoted)
+	_, hasLevel2 := seg.levelMap[2]
+	s.False(hasLevel2) // level 2 should be empty/deleted
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_WithDeepDescendants() {
+	// Build a deeper tree: root -> child1 -> grandchild -> greatgrandchild
+	seg := NewSegment[string]("test", s.nextID(), 5, 10)
+
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	grandchild := s.createAndInsert(seg, "grandchild", child1.ID())
+	greatgrandchild := s.createAndInsert(seg, "greatgrandchild", grandchild.ID())
+
+	// Verify initial state
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 1) // child1
+	s.Len(seg.levelMap[2], 1) // grandchild
+	s.Len(seg.levelMap[3], 1) // greatgrandchild
+
+	// Remove child1 - should promote grandchild (and its descendants) to root
+	err := seg.RemovePromote(child1.ID())
+	s.NoError(err)
+
+	// Verify nodes
+	s.Equal(3, seg.Length())
+	s.Equal(1, grandchild.Level())
+	s.Equal(2, greatgrandchild.Level())
+	s.True(grandchild.IsChildOf(root))
+
+	// Verify levelMap is correctly updated - no stale entries
+	s.Len(seg.levelMap[0], 1) // root
+	s.Len(seg.levelMap[1], 1) // grandchild (promoted from level 2)
+	s.Len(seg.levelMap[2], 1) // greatgrandchild (promoted from level 3)
+	_, hasLevel3 := seg.levelMap[3]
+	s.False(hasLevel3) // level 3 should be empty/deleted
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_RootWithChildren() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemovePromote(nodes["root"].ID())
+	s.Error(err)
+	s.ErrorIs(err, ErrCannotRemoveRoot)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_RootWithoutChildren() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	err = seg.RemovePromote(root.ID())
+	s.NoError(err)
+
+	s.Equal(0, seg.Length())
+	gotRoot, ok := seg.Root()
+	s.False(ok)
+	s.Nil(gotRoot)
+}
+
+func (s *SegmentTestSuite) TestSegment_RemovePromote_NotFound() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	err := seg.RemovePromote(99999)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+// ============================================================================
+// Link Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_Link_Basic() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
+
+	// Link child2 as child of child1
+	err := seg.Link(child1.ID(), child2.ID())
+	s.NoError(err)
+
+	s.True(child2.IsChildOf(child1))
+	s.Equal(2, child2.Level())
+}
+
+func (s *SegmentTestSuite) TestSegment_Link_NodeNotInSegment() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	err = seg.Link(root.ID(), 99999)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodesNotInSegment)
+}
+
+func (s *SegmentTestSuite) TestSegment_Link_MaxDepthExceeded() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 2)
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	child, err := NewNode[string](s.nextID(), 5, ValueOpt("child"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(child, root.ID()))
+
+	err = seg.Link(child.ID(), root.ID())
+	s.Error(err)
+	s.ErrorIs(err, ErrSegmentMaxDepth)
+}
+
+// ============================================================================
+// Unlink Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_Unlink_Basic() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.Unlink(nodes["child1"].ID(), nodes["grandchild"].ID())
+	s.NoError(err)
+
+	// grandchild should be detached but still in nodeMap
+	grandchild, err := seg.NodeByID(nodes["grandchild"].ID())
+	s.NoError(err)
+	s.True(grandchild.IsDetached())
+	s.Equal(-1, grandchild.Level())
+	s.False(grandchild.HasParent())
+
+	// child1 should no longer have grandchild as child
+	s.False(nodes["child1"].HasChild(grandchild))
+}
+
+func (s *SegmentTestSuite) TestSegment_Unlink_NodeNotInSegment() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root, err := NewNode[string](s.nextID(), 5, ValueOpt("root"))
+	s.Require().NoError(err)
+	s.Require().NoError(seg.Insert(root, 0))
+
+	err = seg.Unlink(root.ID(), 99999)
+	s.Error(err)
+	s.ErrorIs(err, ErrNodesNotInSegment)
+}
+
+func (s *SegmentTestSuite) TestSegment_Unlink_NotChildOf() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.Unlink(nodes["child2"].ID(), nodes["grandchild"].ID())
+	s.Error(err)
+	s.ErrorIs(err, ErrNodeNotFound)
+}
+
+// ============================================================================
+// Select Tests
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_Select_All() {
+	seg, _ := s.buildTestSegment()
+
+	nodes := seg.Select(func(n *Node[string]) bool {
+		return true
+	})
+
+	s.Len(nodes, 4)
+}
+
+func (s *SegmentTestSuite) TestSegment_Select_ByValue() {
+	seg, _ := s.buildTestSegment()
+
+	nodes := seg.Select(func(n *Node[string]) bool {
+		return n.Val() == "child1"
+	})
+
+	s.Len(nodes, 1)
+	s.Equal("child1", nodes[0].Val())
+}
+
+func (s *SegmentTestSuite) TestSegment_Select_NoMatch() {
+	seg, _ := s.buildTestSegment()
+
+	nodes := seg.Select(func(n *Node[string]) bool {
+		return n.Val() == "nonexistent"
+	})
+
+	s.Len(nodes, 0)
+}
+
+func (s *SegmentTestSuite) TestSegment_SelectAtLevel() {
+	seg, _ := s.buildTestSegment()
+
+	nodes, err := seg.SelectAtLevel(1, func(n *Node[string]) bool {
+		return true
+	})
+
+	s.NoError(err)
+	s.Len(nodes, 2)
+}
+
+func (s *SegmentTestSuite) TestSegment_SelectAtLevel_WithPredicate() {
+	seg, _ := s.buildTestSegment()
+
+	nodes, err := seg.SelectAtLevel(1, func(n *Node[string]) bool {
+		return n.Val() == "child1"
+	})
+
+	s.NoError(err)
+	s.Len(nodes, 1)
+	s.Equal("child1", nodes[0].Val())
+}
+
+func (s *SegmentTestSuite) TestSegment_SelectAtLevel_InvalidLevel() {
+	seg, _ := s.buildTestSegment()
+
+	nodes, err := seg.SelectAtLevel(99, func(n *Node[string]) bool {
+		return true
+	})
+
+	s.Error(err)
+	s.ErrorIs(err, ErrSegmentLevelNotFound)
+	s.Nil(nodes)
+}
+
+func (s *SegmentTestSuite) TestSegment_SelectOne() {
+	seg, _ := s.buildTestSegment()
+
+	node, err := seg.SelectOne(func(n *Node[string]) bool {
+		return n.Val() == "grandchild"
+	})
+
+	s.NoError(err)
+	s.Equal("grandchild", node.Val())
+}
+
+func (s *SegmentTestSuite) TestSegment_SelectOne_NoMatch() {
+	seg, _ := s.buildTestSegment()
+
+	node, err := seg.SelectOne(func(n *Node[string]) bool {
+		return n.Val() == "nonexistent"
+	})
+
+	s.Error(err)
+	s.ErrorIs(err, ErrNoMatch)
+	s.Nil(node)
+}
+
+// ============================================================================
+// Integration Tests - Consistency Verification
+// ============================================================================
+
+func (s *SegmentTestSuite) TestSegment_Insert_MapsConsistency() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
+	grandchild := s.createAndInsert(seg, "grandchild", child1.ID())
+
+	// Verify nodeMap
+	s.Equal(4, len(seg.nodeMap))
+
+	// Verify levelMap
+	s.Equal(3, len(seg.levelMap))
+	s.Len(seg.levelMap[0], 1)
+	s.Len(seg.levelMap[1], 2)
+	s.Len(seg.levelMap[2], 1)
+
+	// Verify Node relations
+	s.True(root.IsRoot())
+	s.True(child1.IsChildOf(root))
+	s.True(child2.IsChildOf(root))
+	s.True(grandchild.IsChildOf(child1))
+}
+
+func (s *SegmentTestSuite) TestSegment_RemoveCascade_MapsConsistency() {
+	seg, nodes := s.buildTestSegment()
+
+	err := seg.RemoveCascade(nodes["child1"].ID())
+	s.NoError(err)
+
+	// Verify nodeMap
+	s.Equal(2, len(seg.nodeMap))
+	_, exists := seg.nodeMap[nodes["child1"].ID()]
+	s.False(exists)
+	_, exists = seg.nodeMap[nodes["grandchild"].ID()]
+	s.False(exists)
+
+	// Verify levelMap
+	s.Len(seg.levelMap[0], 1)
+	s.Len(seg.levelMap[1], 1) // only child2 remains
+	_, exists = seg.levelMap[2]
+	s.False(exists) // level 2 should be deleted
+
+	// Verify Node relations
+	s.False(nodes["root"].HasChild(nodes["child1"]))
+}
+
+func (s *SegmentTestSuite) TestSegment_Link_MapsConsistency() {
+	seg := NewSegment[string]("test", s.nextID(), 5, 5)
+
+	root := s.createAndInsert(seg, "root", 0)
+	child1 := s.createAndInsert(seg, "child1", root.ID())
+	child2 := s.createAndInsert(seg, "child2", root.ID())
+
+	// Move child2 under child1
+	err := seg.Link(child1.ID(), child2.ID())
+	s.NoError(err)
+
+	// Verify levelMap updated correctly
+	s.Len(seg.levelMap[1], 1) // only child1 at level 1
+	s.Len(seg.levelMap[2], 1) // child2 moved to level 2
+
+	// Verify Node relations
+	s.True(child2.IsChildOf(child1))
+	s.False(child2.IsChildOf(root))
+	s.Equal(2, child2.Level())
 }
