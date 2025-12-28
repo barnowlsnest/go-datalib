@@ -16,6 +16,8 @@ A Go library providing fundamental data structures and high-performance utilitie
 - **BST (Binary Search Tree)** - Iterative BST with O(log n) average-case operations, supports multiple traversal orders
 - **Heap** - Generic binary heap (min/max) with O(log n) insert/delete and O(1) peek
 - **Fenwick Tree (Binary Indexed Tree)** - Efficient prefix sums and point updates in O(log n) time
+- **Segment Tree** - Generic segment tree for range queries with configurable depth/breadth, DFS/BFS traversal, and level-based node organization
+- **B-Tree** - Self-balancing tree with O(log n) operations, range queries, and floor/ceiling lookups
 - **MTree (Multi-way Tree)** - Generic M-way tree with configurable breadth/depth, hierarchy building, and cycle detection
 
 #### Graph Structures
@@ -50,29 +52,38 @@ n := list.Pop() // Returns node with ID 2
 ### Stack
 
 ```go
-import "github.com/barnowlsnest/go-datalib/pkg/stack"
-import "github.com/barnowlsnest/go-datalib/pkg/node"
+import (
+	"github.com/barnowlsnest/go-datalib/pkg/list"
+	"github.com/barnowlsnest/go-datalib/pkg/node"
+)
 
-s := stack.New()
+s := list.NewStack()
 s.Push(node.New(1, nil, nil))
 s.Push(node.New(2, nil, nil))
 
 top, ok := s.Peek()  // View top without removing
 n := s.Pop()         // Remove and return top
+isEmpty := s.IsEmpty()
+size := s.Size()
 ```
 
 ### Queue
 
 ```go
-import "github.com/barnowlsnest/go-datalib/pkg/queue"
-import "github.com/barnowlsnest/go-datalib/pkg/node"
+import (
+	"github.com/barnowlsnest/go-datalib/pkg/list"
+	"github.com/barnowlsnest/go-datalib/pkg/node"
+)
 
-q := queue.New()
+q := list.NewQueue()
 q.Enqueue(node.New(1, nil, nil))
 q.Enqueue(node.New(2, nil, nil))
 
-front, ok := q.PeekFront()  // View front
-n := q.Dequeue()            // Remove from front
+front, okFront := q.PeekFront()  // View front without removing
+rear, okRear := q.PeekRear()     // View rear without removing
+n := q.Dequeue()                 // Remove from front
+isEmpty := q.IsEmpty()
+size := q.Size()
 ```
 
 ### Serial ID Generator
@@ -99,12 +110,13 @@ current := gen.Current("user")  // Returns 2
 ```go
 import "github.com/barnowlsnest/go-datalib/pkg/serial"
 
-// Hash two uint64 values
+// Hash two uint64 values into a single hash
 nodeA := uint64(123)
 nodeB := uint64(456)
 edgeHash := serial.NSum(nodeA, nodeB)
 
-// Order matters: NSum(a, b) != NSum(b, a)
+// Order is normalized: NSum(a, b) == NSum(b, a)
+// Useful for creating undirected edge identifiers
 ```
 
 ### Binary Search Tree (BST)
@@ -197,43 +209,176 @@ rangeSum := ft.RangeQuery(2, 7)  // Sum from index 2 to 7
 ft2 := tree.NewFenwick[int](100)  // Size 100
 ```
 
-### Directed Acyclic Graph (DAG)
+### Segment Tree
 
 ```go
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/dag"
-	"github.com/barnowlsnest/go-datalib/pkg/serial"
+	"fmt"
+	"github.com/barnowlsnest/go-datalib/pkg/tree"
 )
+
+// Create a new segment tree with alias, ID, max breadth, and max depth
+seg := tree.NewSegment[string]("users", 1, 10, 5)
+
+// Create and insert root node
+root, err := tree.NewNode[string](1, 10, tree.ValueOpt("root"))
+if err != nil {
+	panic(err)
+}
+seg.Insert(root, 0)  // Insert root with parentID 0 (no parent)
+
+// Insert child nodes
+child1, err := tree.NewNode[string](2, 10, tree.ValueOpt("child1"))
+if err != nil {
+	panic(err)
+}
+seg.Insert(child1, root.ID())
+
+child2, err := tree.NewNode[string](3, 10, tree.ValueOpt("child2"))
+if err != nil {
+	panic(err)
+}
+seg.Insert(child2, root.ID())
+
+// Query segment properties
+height := seg.Height()              // Current tree height
+length := seg.Length()              // Number of nodes
+capacity := seg.Capacity()          // Max total nodes
+remaining := seg.RemainingCapacity()
+
+// Get nodes
+rootNode, _ := seg.Root()
+nodeByID, _ := seg.NodeByID(2)
+
+// Traversal
+seg.DFS(func(n *tree.Node[string]) bool {
+	fmt.Println(n.Val())
+	return true  // continue traversal
+})
+
+seg.BFS(func(n *tree.Node[string]) bool {
+	fmt.Println(n.Val())
+	return true
+})
+
+// Level-based operations
+seg.ForEachNodeAtLevel(1, func(n *tree.Node[string]) bool {
+	return true
+})
+
+// Selection
+nodes := seg.Select(func(n *tree.Node[string]) bool {
+	return n.Val() == "child1"
+})
+
+// Node management
+seg.Link(root.ID(), child1.ID())        // Link existing nodes
+seg.Unlink(root.ID(), child1.ID())      // Break relationship
+seg.RemoveCascade(child1.ID())          // Remove node and descendants
+seg.RemovePromote(child1.ID())          // Remove and promote children
+```
+
+### B-Tree
+
+```go
+import (
+	"fmt"
+	"github.com/barnowlsnest/go-datalib/pkg/tree"
+)
+
+// Create a B-tree with minimum degree 3
+bt := tree.NewBTree[uint64, string](3)
+
+// Insert key-value pairs
+bt.Insert(100, "first")
+bt.Insert(200, "second")
+bt.Insert(50, "third")
+bt.Insert(150, "fourth")
+
+// Search for a value
+value, found := bt.Search(100)  // Returns "first", true
+
+// Check if key exists
+exists := bt.Contains(100)  // true
+
+// Delete a key
+deleted := bt.Delete(100)  // true
+
+// Get min/max entries
+minKey, minVal, _ := bt.Min()  // 50, "third"
+maxKey, maxVal, _ := bt.Max()  // 200, "second"
+
+// Floor/Ceiling queries
+floorKey, floorVal, _ := bt.Floor(125)    // Largest key <= 125: 50, "third"
+ceilKey, ceilVal, _ := bt.Ceiling(125)    // Smallest key >= 125: 150, "fourth"
+
+// Range iteration
+for entry := range bt.Range(50, 200) {
+	fmt.Printf("%d: %s\n", entry.Key, entry.Value)
+}
+
+// Iterate all entries in sorted order
+for entry := range bt.All() {
+	fmt.Printf("%d: %s\n", entry.Key, entry.Value)
+}
+
+// Get all keys/values
+keys := bt.Keys()      // []uint64
+values := bt.Values()  // []string
+
+// Tree properties
+size := bt.Size()
+height := bt.Height()
+isEmpty := bt.IsEmpty()
+bt.Clear()
+```
+
+### Directed Acyclic Graph (DAG)
+
+```go
+import "github.com/barnowlsnest/go-datalib/pkg/dag"
 
 // Create a new DAG
 g := dag.New()
 
-// Add nodes to groups
-task1 := dag.GroupNode{Group: "build", ID: 1}
-task2 := dag.GroupNode{Group: "build", ID: 2}
-task3 := dag.GroupNode{Group: "test", ID: 3}
+// Create groups first
+g.AddGroup("build")
+g.AddGroup("test")
 
+// Define nodes with group membership
+task1 := dag.GroupNode{ID: 1, Group: "build"}
+task2 := dag.GroupNode{ID: 2, Group: "build"}
+task3 := dag.GroupNode{ID: 3, Group: "test"}
+
+// Add nodes to their groups
 g.AddNode(task1)
 g.AddNode(task2)
 g.AddNode(task3)
 
-// Add edges (dependencies)
-edgeID := serial.NSum(task1.ID, task2.ID)
-g.AddEdge(task1.ID, task2.ID, edgeID)  // task1 -> task2
-g.AddEdge(task2.ID, task3.ID, serial.NSum(task2.ID, task3.ID))  // task2 -> task3
+// Add edges (dependencies) - edge IDs are auto-generated using NSum
+g.AddEdge(task1, task2)  // task1 -> task2
+g.AddEdge(task2, task3)  // task2 -> task3
 
-// Check if graph is acyclic (detect cycles)
-isDAG, err := g.IsAcyclic()
-if !isDAG {
-	// Handle cycle
-}
-
-// Get topological sort order
-order, err := g.TopologicalSort()  // Returns valid execution order
+// Check if graph is acyclic (async via channel).
+// IsAcyclic is shown here as returning a channel of bool. If your implementation
+// can fail, prefer returning a separate error channel or a result struct
+// (e.g., `type AcyclicResult struct { OK bool; Err error }`) and handle Err here.
+isAcyclic := <-g.IsAcyclic()  // Returns true if no cycles; handle any reported errors as appropriate.
 
 // Query relationships
-hasEdge := g.HasEdge(task1.ID, task2.ID)  // true
-predecessors := g.GetBackRefs(task3.ID)   // Returns [task2]
+hasEdge := g.HasEdge(task1, task2)           // true
+predecessors, _ := g.GetBackRefsOf(task3)    // Returns [task2]
+
+// Iterate over neighbors
+g.ForEachNeighbour(task1, func(edge dag.AdjacencyEdge, err error) {
+	// edge.From, edge.To, edge.Edge (ID)
+})
+
+// Get all nodes in a group
+buildNodes, _ := g.GetNodes("build")  // Returns [task1, task2]
+
+// List all groups
+groups := g.ListGroups()  // Returns ["build", "test"]
 ```
 
 ### Multi-way Tree (MTree)
@@ -334,11 +479,13 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 | Data Structure | Insert                   | Delete                   | Search/Query             | Space  |
 |----------------|--------------------------|--------------------------|--------------------------|--------|
 | LinkedList     | O(1)                     | O(1)                     | O(n)                     | O(n)   |
-| Stack          | O(1)                     | O(1)                     |  O(1) peek               | O(n)   |
+| Stack          | O(1)                     | O(1)                     | O(1) peek                | O(n)   |
 | Queue          | O(1)                     | O(1)                     | O(1) peek                | O(n)   |
 | BST            | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(log n) avg, O(n) worst | O(n)   |
 | Heap           | O(log n)                 | O(log n)                 | O(1) peek                | O(n)   |
 | Fenwick Tree   | O(log n)                 | N/A                      | O(log n)                 | O(n)   |
+| Segment Tree   | O(1)                     | O(1)                     | O(n) traversal           | O(n)   |
+| B-Tree         | O(log n)                 | O(log n)                 | O(log n)                 | O(n)   |
 | MTree          | O(1) attach              | O(1) detach              | O(n) traversal           | O(n)   |
 | DAG            | O(1)                     | O(1)                     | O(V+E) cycle detection   | O(V+E) |
 
