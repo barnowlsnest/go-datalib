@@ -16,7 +16,7 @@ A Go library providing fundamental data structures and high-performance utilitie
 - **BST (Binary Search Tree)** - Iterative BST with O(log n) average-case operations, supports multiple traversal orders
 - **Heap** - Generic binary heap (min/max) with O(log n) insert/delete and O(1) peek
 - **Fenwick Tree (Binary Indexed Tree)** - Efficient prefix sums and point updates in O(log n) time
-- **Segment Tree** - Generic tree segment with configurable depth/breadth, DFS/BFS traversal, and level-based node organization
+- **Segment Tree** - Generic segment tree for range queries with configurable depth/breadth, DFS/BFS traversal, and level-based node organization
 - **B-Tree** - Self-balancing tree with O(log n) operations, range queries, and floor/ceiling lookups
 - **MTree (Multi-way Tree)** - Generic M-way tree with configurable breadth/depth, hierarchy building, and cycle detection
 
