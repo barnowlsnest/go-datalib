@@ -16,7 +16,7 @@ import (
 //   - Cumulative frequency tables
 //   - Range sum queries with updates
 //   - Counting inversions
-//   - 2D range sum queries (with 2D Fenwick Fenwick)
+//   - 2D range sum queries (with 2D Fenwick tree)
 type Fenwick[T constraints.Unsigned | constraints.Integer | constraints.Float] struct {
 	tree []T
 	n    int
