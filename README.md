@@ -309,8 +309,8 @@ minKey, minVal, _ := bt.Min()  // 50, "third"
 maxKey, maxVal, _ := bt.Max()  // 200, "second"
 
 // Floor/Ceiling queries
-floorKey, floorVal, _ := bt.Floor(125)    // Largest key <= 125
-ceilKey, ceilVal, _ := bt.Ceiling(125)    // Smallest key >= 125
+floorKey, floorVal, _ := bt.Floor(125)    // Largest key <= 125: 50, "third"
+ceilKey, ceilVal, _ := bt.Ceiling(125)    // Smallest key >= 125: 150, "fourth"
 
 // Range iteration
 for entry := range bt.Range(50, 200) {
