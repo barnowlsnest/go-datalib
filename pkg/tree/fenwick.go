@@ -178,7 +178,7 @@ func (t *Fenwick[T]) Clear() {
 	}
 }
 
-// ToSlice returns a 0-indexed slice containing all values in the Fenwick Fenwick.
+// ToSlice returns a 0-indexed slice containing all values in the Fenwick.
 // The returned slice is a copy, so modifications won't affect the tree.
 // Time complexity: O(n log n)
 //

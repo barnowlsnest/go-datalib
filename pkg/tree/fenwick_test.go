@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-// ConstructorTestSuite tests Fenwick Fenwick creation
+// ConstructorTestSuite tests Fenwick creation
 type ConstructorTestSuite struct {
 	suite.Suite
 }

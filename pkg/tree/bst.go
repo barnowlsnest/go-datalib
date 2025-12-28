@@ -7,7 +7,7 @@ import (
 	"github.com/barnowlsnest/go-datalib/pkg/node"
 )
 
-// BST (Binary Search Fenwick) is a production-ready, iterative implementation
+// BST (Binary Search Tree) is a production-ready, iterative implementation
 // that maintains the BST property: for any node, all values in the left subtree
 // are less than the node's value, and all values in the right subtree are greater.
 //
@@ -30,7 +30,7 @@ type BST[T cmp.Ordered] struct {
 	size int
 }
 
-// NewBST creates a new empty Binary Search Fenwick.
+// NewBST creates a new empty Binary Search Tree.
 //
 // Returns:
 //   - A new empty BST instance ready for use
