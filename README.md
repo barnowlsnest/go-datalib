@@ -359,8 +359,11 @@ g.AddNode(task3)
 g.AddEdge(task1, task2)  // task1 -> task2
 g.AddEdge(task2, task3)  // task2 -> task3
 
-// Check if graph is acyclic (async via channel)
-isAcyclic := <-g.IsAcyclic()  // Returns true if no cycles
+// Check if graph is acyclic (async via channel).
+// IsAcyclic is shown here as returning a channel of bool. If your implementation
+// can fail, prefer returning a separate error channel or a result struct
+// (e.g., `type AcyclicResult struct { OK bool; Err error }`) and handle Err here.
+isAcyclic := <-g.IsAcyclic()  // Returns true if no cycles; handle any reported errors as appropriate.
 
 // Query relationships
 hasEdge := g.HasEdge(task1, task2)           // true
