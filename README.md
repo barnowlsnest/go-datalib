@@ -79,9 +79,9 @@ q := list.NewQueue()
 q.Enqueue(node.New(1, nil, nil))
 q.Enqueue(node.New(2, nil, nil))
 
-front, ok := q.PeekFront()  // View front without removing
-rear, ok := q.PeekRear()    // View rear without removing
-n := q.Dequeue()            // Remove from front
+front, okFront := q.PeekFront()  // View front without removing
+rear, okRear := q.PeekRear()     // View rear without removing
+n := q.Dequeue()                 // Remove from front
 isEmpty := q.IsEmpty()
 size := q.Size()
 ```
