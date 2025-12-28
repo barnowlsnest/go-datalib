@@ -225,7 +225,7 @@ root, err := tree.NewNode[string](1, 10, tree.ValueOpt("root"))
 if err != nil {
 	panic(err)
 }
-seg.Insert(root, 0)  // parentID 0 for root
+seg.Insert(root, 0)  // Insert root with parentID 0 (no parent)
 
 // Insert child nodes
 child1, err := tree.NewNode[string](2, 10, tree.ValueOpt("child1"))
