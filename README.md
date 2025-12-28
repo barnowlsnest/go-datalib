@@ -221,14 +221,23 @@ import (
 seg := tree.NewSegment[string]("users", 1, 10, 5)
 
 // Create and insert root node
-root, _ := tree.NewNode[string](1, 10, tree.ValueOpt("root"))
+root, err := tree.NewNode[string](1, 10, tree.ValueOpt("root"))
+if err != nil {
+	panic(err)
+}
 seg.Insert(root, 0)  // parentID 0 for root
 
 // Insert child nodes
-child1, _ := tree.NewNode[string](2, 10, tree.ValueOpt("child1"))
+child1, err := tree.NewNode[string](2, 10, tree.ValueOpt("child1"))
+if err != nil {
+	panic(err)
+}
 seg.Insert(child1, root.ID())
 
-child2, _ := tree.NewNode[string](3, 10, tree.ValueOpt("child2"))
+child2, err := tree.NewNode[string](3, 10, tree.ValueOpt("child2"))
+if err != nil {
+	panic(err)
+}
 seg.Insert(child2, root.ID())
 
 // Query segment properties
