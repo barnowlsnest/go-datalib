@@ -1,6 +1,6 @@
 # go-datalib
 
-A Go library providing fundamental data structures and high-performance utilities for building efficient applications.
+A Go library providing fundamental data structures.
 
 ## Features
 
