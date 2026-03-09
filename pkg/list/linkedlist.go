@@ -3,7 +3,7 @@ package list
 import (
 	"iter"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 // LinkedList implements a doubly-linked list data structure.

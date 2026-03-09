@@ -6,9 +6,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/list"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 )
 
 // Graph represents a directed graph with support for node grouping and acyclic verification.

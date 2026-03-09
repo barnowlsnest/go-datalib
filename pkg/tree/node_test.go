@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 )
 
 const testDefaultGroup = "default_test"

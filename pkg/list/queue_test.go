@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 func TestNewQueue(t *testing.T) {

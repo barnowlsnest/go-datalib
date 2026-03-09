@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 // LinkedListBasicTestSuite defines tests for basic linked list functionality

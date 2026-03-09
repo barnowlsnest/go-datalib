@@ -31,7 +31,8 @@ A Go library providing fundamental data structures.
 ## Installation
 
 ```bash
-go get github.com/barnowlsnest/go-datalib/v3
+go get github.com/barnowlsnest/go-datalib/v5
+
 ```
 
 ## Quick Start
@@ -39,8 +40,9 @@ go get github.com/barnowlsnest/go-datalib/v3
 ### LinkedList
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/list"
-import "github.com/barnowlsnest/go-datalib/v3/pkg/node"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/list"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/node"
+
 
 list := list.New()
 list.Push(node.New(1, nil, nil))
@@ -53,8 +55,8 @@ n := list.Pop() // Returns node with ID 2
 
 ```go
 import (
-	"github.com/barnowlsnest/go-datalib/v3/pkg/list"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 s := list.NewStack()
@@ -71,8 +73,8 @@ size := s.Size()
 
 ```go
 import (
-	"github.com/barnowlsnest/go-datalib/v3/pkg/list"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 q := list.NewQueue()
@@ -89,7 +91,7 @@ size := q.Size()
 ### Serial ID Generator
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 
 // Create instance or use singleton
 gen := &serial.Serial{}
@@ -108,7 +110,7 @@ current := gen.Current("user")  // Returns 2
 ### NSum Hash Function
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 
 // Hash two uint64 values into a single hash
 nodeA := uint64(123)
@@ -124,8 +126,8 @@ edgeHash := serial.NSum(nodeA, nodeB)
 ```go
 import (
 	"fmt"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/tree"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/tree"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
 )
 
 // Create a new BST
@@ -161,7 +163,7 @@ height := bst.Height()  // Tree height
 ### Heap (Min/Max Binary Heap)
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/tree"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/tree"
 
 // Create a min-heap (smallest element on top)
 minHeap := tree.NewMin[int]()
@@ -189,7 +191,7 @@ heap := tree.HeapFromSlice(data, func(a, b int) bool { return a < b })
 ### Fenwick Tree (Binary Indexed Tree)
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/tree"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/tree"
 
 // Create from slice
 data := []int{3, 2, -1, 6, 5, 4, -3, 3, 7, 2, 3}
@@ -214,7 +216,7 @@ ft2 := tree.NewFenwick[int](100)  // Size 100
 ```go
 import (
 	"fmt"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/tree"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/tree"
 )
 
 // Create a new segment tree with alias, ID, max breadth, and max depth
@@ -283,7 +285,7 @@ seg.RemovePromote(child1.ID())          // Remove and promote children
 ```go
 import (
 	"fmt"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/tree"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/tree"
 )
 
 // Create a B-tree with minimum degree 3
@@ -336,7 +338,7 @@ bt.Clear()
 ### Directed Acyclic Graph (DAG)
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v3/pkg/dag"
+import "github.com/barnowlsnest/go-datalib/v5/pkg/dag"
 
 // Create a new DAG
 g := dag.New()
@@ -386,8 +388,8 @@ groups := g.ListGroups()  // Returns ["build", "test"]
 ```go
 import (
 	"context"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/tree"
-	"github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/tree"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 )
 
 // Create nodes with maximum breadth (max children)

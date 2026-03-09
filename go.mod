@@ -1,4 +1,4 @@
-module github.com/barnowlsnest/go-datalib/v3
+module github.com/barnowlsnest/go-datalib/v5
 
 go 1.25.0
 
