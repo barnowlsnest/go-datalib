@@ -7,7 +7,7 @@ vars:
   COVERAGE_THRESHOLD: 80  # Minimum code coverage percentage required
 
 env:
-  MODULE_PATH: github.com/barnowlsnest/go-datalib/v3
+  MODULE_PATH: github.com/barnowlsnest/go-datalib/v5
 
 tasks:
   go-update:

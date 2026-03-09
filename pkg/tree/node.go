@@ -20,7 +20,7 @@ import (
 	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/barnowlsnest/go-datalib/v3/pkg/serial"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 )
 
 const (
