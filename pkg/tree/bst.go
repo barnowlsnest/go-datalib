@@ -3,8 +3,8 @@ package tree
 import (
 	"cmp"
 
-	"github.com/barnowlsnest/go-datalib/pkg/list"
-	"github.com/barnowlsnest/go-datalib/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
 )
 
 // BST (Binary Search Tree) is a production-ready, iterative implementation

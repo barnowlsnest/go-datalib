@@ -1,7 +1,7 @@
 package list
 
 import (
-	"github.com/barnowlsnest/go-datalib/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
 )
 
 // Queue implements a FIFO (First In, First Out) data structure.

@@ -5,7 +5,7 @@ import (
 
 	"github.com/stretchr/testify/suite"
 
-	"github.com/barnowlsnest/go-datalib/pkg/serial"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/serial"
 )
 
 type SegmentTestSuite struct {

@@ -1,12 +1,12 @@
-module github.com/barnowlsnest/go-datalib
+module github.com/barnowlsnest/go-datalib/v3
 
-go 1.25
+go 1.25.0
 
 require (
 	github.com/google/uuid v1.6.0
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/exp v0.0.0-20251023183803-a4bb9ffd2546
-	golang.org/x/sync v0.17.0
+	golang.org/x/exp v0.0.0-20260218203240-3dfff04db8fa
+	golang.org/x/sync v0.20.0
 )
 
 require (

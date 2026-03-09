@@ -6,7 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 
-	"github.com/barnowlsnest/go-datalib/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
 )
 
 // BSTTestSuite is the main test suite for BST operations
