@@ -7,7 +7,7 @@ vars:
   COVERAGE_THRESHOLD: 80  # Minimum code coverage percentage required
 
 env:
-  MODULE_PATH: github.com/barnowlsnest/go-datalib
+  MODULE_PATH: github.com/barnowlsnest/go-datalib/v3
 
 tasks:
   go-update:
@@ -78,24 +78,4 @@ tasks:
       - sanity
     cmds:
       - task: go-build
-
-  release:major:
-    deps:
-      - build
-    cmds:
-      - ./scripts/release.sh major
-
-  release:minor:
-    desc: Create a minor release
-    deps:
-      - build
-    cmds:
-      - ./scripts/release.sh minor
-
-  release:patch:
-    desc: Create a patch release
-    deps:
-      - build
-    cmds:
-      - ./scripts/release.sh patch
 

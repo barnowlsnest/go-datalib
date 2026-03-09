@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/barnowlsnest/go-datalib/pkg/list"
-	"github.com/barnowlsnest/go-datalib/pkg/node"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v3/pkg/node"
 )
 
 const (
