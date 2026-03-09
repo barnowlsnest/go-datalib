@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/suite"
-  
+
 	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 )
 
