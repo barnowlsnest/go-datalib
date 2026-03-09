@@ -32,6 +32,7 @@ A Go library providing fundamental data structures.
 
 ```bash
 go get github.com/barnowlsnest/go-datalib/v5
+
 ```
 
 ## Quick Start
@@ -41,6 +42,7 @@ go get github.com/barnowlsnest/go-datalib/v5
 ```go
 import "github.com/barnowlsnest/go-datalib/v5/pkg/list"
 import "github.com/barnowlsnest/go-datalib/v5/pkg/node"
+
 
 list := list.New()
 list.Push(node.New(1, nil, nil))
