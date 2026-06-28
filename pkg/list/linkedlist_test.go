@@ -394,6 +394,110 @@ func (s *LinkedListIDWorkflowTestSuite) TestIDBasedMethodsExclusively() {
 	s.Require().Equal(uint64(3), tailID)
 }
 
+// LinkedListMoveToHeadTestSuite defines tests for the MoveToHead operation
+type LinkedListMoveToHeadTestSuite struct {
+	suite.Suite
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_NilNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	list.Push(node1)
+
+	list.MoveToHead(nil)
+
+	s.Require().Equal(1, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node1, list.tail)
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_EmptyList_IsNoOp() {
+	list := New()
+	foreign := node.New(99, nil, nil)
+
+	list.MoveToHead(foreign)
+
+	s.Require().Equal(0, list.size)
+	s.Require().Nil(list.head)
+	s.Require().Nil(list.tail)
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_HeadNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+
+	list.MoveToHead(node1)
+
+	s.Require().Equal(2, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node2, list.tail)
+	s.Require().Nil(node1.Prev())
+	s.Require().Equal(node2, node1.Next())
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_TailNode() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	node3 := node.New(3, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+	list.Push(node3)
+
+	list.MoveToHead(node3)
+
+	// Order is now 3, 1, 2
+	s.Require().Equal(3, list.size)
+	s.Require().Equal(node3, list.head)
+	s.Require().Equal(node2, list.tail)
+	s.Require().Nil(node3.Prev())
+	s.Require().Equal(node1, node3.Next())
+	s.Require().Equal(node3, node1.Prev())
+	s.Require().Equal(node2, node1.Next())
+	s.Require().Equal(node1, node2.Prev())
+	s.Require().Nil(node2.Next())
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_MiddleNode() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	node3 := node.New(3, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+	list.Push(node3)
+
+	list.MoveToHead(node2)
+
+	// Order is now 2, 1, 3
+	s.Require().Equal(3, list.size)
+	s.Require().Equal(node2, list.head)
+	s.Require().Equal(node3, list.tail)
+	s.Require().Nil(node2.Prev())
+	s.Require().Equal(node1, node2.Next())
+	s.Require().Equal(node2, node1.Prev())
+	s.Require().Equal(node3, node1.Next())
+	s.Require().Equal(node1, node3.Prev())
+	s.Require().Nil(node3.Next())
+}
+
+func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_SingleNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	list.Push(node1)
+
+	list.MoveToHead(node1)
+
+	s.Require().Equal(1, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node1, list.tail)
+	s.Require().Nil(node1.Prev())
+	s.Require().Nil(node1.Next())
+}
+
 // TestSuite runners
 func TestLinkedListBasicTestSuite(t *testing.T) {
 	suite.Run(t, new(LinkedListBasicTestSuite))
@@ -409,4 +513,8 @@ func TestLinkedListIDBasedTestSuite(t *testing.T) {
 
 func TestLinkedListIDWorkflowTestSuite(t *testing.T) {
 	suite.Run(t, new(LinkedListIDWorkflowTestSuite))
+}
+
+func TestLinkedListMoveToHeadTestSuite(t *testing.T) {
+	suite.Run(t, new(LinkedListMoveToHeadTestSuite))
 }

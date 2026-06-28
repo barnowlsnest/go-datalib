@@ -60,6 +60,67 @@ func New() *LinkedList {
 	}
 }
 
+// MoveToHead relocates an existing node to the beginning (head) of the list.
+//
+// This operation is O(1) and does not change the list size. It is intended
+// for repositioning a node that already belongs to the list, such as marking
+// an entry as most-recently-used in an LRU cache.
+//
+// Parameters:
+//   - n: The node to move to the head. Must already be a member of the list.
+//
+// Behavior:
+//   - If n is nil, the list is empty, or n is already the head, this is a no-op
+//   - Otherwise n is unlinked from its current position and linked before the
+//     current head; if n was the tail, the previous node becomes the new tail
+//
+// Caller Responsibility:
+// The node must already belong to the list. Membership is not verified to keep
+// the operation O(1); passing a node that is not part of the list results in
+// undefined behavior.
+//
+// Example:
+//
+//	list := New()
+//	a := node.New(1, nil, nil)
+//	b := node.New(2, nil, nil)
+//	list.Push(a)
+//	list.Push(b)
+//	list.MoveToHead(b)
+//	// List order is now b, a
+func (list *LinkedList) MoveToHead(n *node.Node) {
+	switch {
+	case n == nil:
+		return
+	case list.head == nil:
+		return
+	case n == list.head:
+		return
+	}
+
+	prev := n.Prev()
+	next := n.Next()
+
+	// Unlink n from its current position.
+	if prev != nil {
+		prev.WithNext(next)
+	}
+	if next != nil {
+		next.WithPrev(prev)
+	}
+
+	// If n was the tail, its predecessor becomes the new tail.
+	if list.tail == n {
+		list.tail = prev
+	}
+
+	// Link n at the head.
+	n.WithPrev(nil)
+	n.WithNext(list.head)
+	list.head.WithPrev(n)
+	list.head = n
+}
+
 // Push adds a node to the end (tail) of the list.
 //
 // This operation is O(1) and increases the list size by 1. The node's
