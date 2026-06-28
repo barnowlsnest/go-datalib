@@ -23,6 +23,9 @@ A Go library providing fundamental data structures.
 #### Graph Structures
 - **DAG (Directed Acyclic Graph)** - Directed graph with cycle detection via Kahn's algorithm, group-based node organization
 
+#### Caching
+- **LRU (Least Recently Used)** - Generic, thread-safe LRU cache with O(1) `Put`/`Get` and automatic eviction of the least recently used entry at capacity
+
 ### Utilities
 
 - **Serial** - High-performance, thread-safe ID generator with sharding and cache-line alignment
@@ -450,6 +453,38 @@ root.DetachChildFunc(func(n *tree.Node[string]) bool {
 })
 ```
 
+### LRU Cache
+
+```go
+import (
+	"errors"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/lru"
+)
+
+// Create a thread-safe LRU cache with a capacity.
+// A non-positive capacity falls back to the default (1024).
+cache := lru.New[string](2)
+
+// Insert or update values (keys are uint64, values are pointers)
+v1, v2 := "first", "second"
+cache.Put(1, &v1)
+cache.Put(2, &v2)
+
+// Get marks the entry as most recently used
+value, err := cache.Get(1)  // Returns &v1, nil
+if errors.Is(err, lru.ErrCacheMiss) {
+	// key not cached
+}
+
+// Inserting beyond capacity evicts the least recently used entry.
+// Key 1 was just accessed, so key 2 is evicted here.
+v3 := "third"
+cache.Put(3, &v3)
+
+_, err = cache.Get(2)        // Returns nil, lru.ErrCacheMiss
+size := cache.Len()          // Number of cached entries: 2
+```
+
 ## Performance
 
 ### Serial Benchmarks (Apple M1 Max)
@@ -471,6 +506,7 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 ### Thread Safety
 
 - **Serial package**: Fully thread-safe using atomic operations
+- **LRU cache**: Fully thread-safe using an internal mutex
 - **Linear data structures** (LinkedList, Stack, Queue): Require external synchronization for concurrent access
 - **Tree structures** (BST, Heap, Fenwick, MTree): Require external synchronization for concurrent access
 - **Graph structures** (DAG): Require external synchronization for concurrent access
@@ -490,6 +526,7 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 | B-Tree         | O(log n)                 | O(log n)                 | O(log n)                 | O(n)   |
 | MTree          | O(1) attach              | O(1) detach              | O(n) traversal           | O(n)   |
 | DAG            | O(1)                     | O(1)                     | O(V+E) cycle detection   | O(V+E) |
+| LRU Cache      | O(1)                     | O(1) evict               | O(1)                     | O(n)   |
 
 ### Performance Optimizations
 
