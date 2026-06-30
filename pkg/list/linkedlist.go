@@ -98,10 +98,69 @@ func (list *LinkedList) MoveToHead(n *node.Node) {
 		return
 	}
 
+	list.unlink(n)
+
+	// Link n at the head.
+	n.WithPrev(nil)
+	n.WithNext(list.head)
+	list.head.WithPrev(n)
+	list.head = n
+}
+
+// MoveToTail relocates an existing node to the end (tail) of the list.
+//
+// This operation is O(1) and does not change the list size. It is intended
+// for repositioning a node that already belongs to the list, such as marking
+// an entry as most-recently-used in an LRU cache.
+//
+// Parameters:
+//   - n: The node to move to the tail. Must already be a member of the list.
+//
+// Behavior:
+//   - If n is nil, the list is empty, or n is already the tail, this is a no-op
+//   - Otherwise n is unlinked from its current position and linked after the
+//     current tail; if n was the head, the next node becomes the new head
+//
+// Caller Responsibility:
+// The node must already belong to the list. Membership is not verified to keep
+// the operation O(1); passing a node that is not part of the list results in
+// undefined behavior.
+//
+// Example:
+//
+//	list := New()
+//	a := node.New(1, nil, nil)
+//	b := node.New(2, nil, nil)
+//	list.Push(a)
+//	list.Push(b)
+//	list.MoveToTail(a)
+//	// List order is now b, a
+func (list *LinkedList) MoveToTail(n *node.Node) {
+	switch {
+	case n == nil:
+		return
+	case list.tail == nil:
+		return
+	case n == list.tail:
+		return
+	}
+
+	list.unlink(n)
+
+	// Link n at the tail.
+	n.WithNext(nil)
+	n.WithPrev(list.tail)
+	list.tail.WithNext(n)
+	list.tail = n
+}
+
+// unlink detaches n from its current position in the list, repairing the
+// neighbours' references and fixing the head/tail pointers if n was at either
+// end. It does not change the list size and assumes n is a member of the list.
+func (list *LinkedList) unlink(n *node.Node) {
 	prev := n.Prev()
 	next := n.Next()
 
-	// Unlink n from its current position.
 	if prev != nil {
 		prev.WithNext(next)
 	}
@@ -109,16 +168,12 @@ func (list *LinkedList) MoveToHead(n *node.Node) {
 		next.WithPrev(prev)
 	}
 
-	// If n was the tail, its predecessor becomes the new tail.
+	if list.head == n {
+		list.head = next
+	}
 	if list.tail == n {
 		list.tail = prev
 	}
-
-	// Link n at the head.
-	n.WithPrev(nil)
-	n.WithNext(list.head)
-	list.head.WithPrev(n)
-	list.head = n
 }
 
 // Push adds a node to the end (tail) of the list.
