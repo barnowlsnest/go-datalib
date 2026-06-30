@@ -100,6 +100,22 @@ func (lru *LRU[T]) Len() int {
 	return len(lru.cache)
 }
 
+// Delete removes the entry for key from the cache, if present.
+func (lru *LRU[T]) Delete(keys ...uint64) {
+	lru.mux.Lock()
+	defer lru.mux.Unlock()
+
+	for _, key := range keys {
+		cached, ok := lru.cache[key]
+		if !ok {
+			continue
+		}
+
+		lru.usage.MoveToTail(cached.node)
+		lru.evict()
+	}
+}
+
 // evict removes the least recently used entry (the list tail).
 //
 // Callers must hold lru.mux.

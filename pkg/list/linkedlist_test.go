@@ -498,6 +498,110 @@ func (s *LinkedListMoveToHeadTestSuite) TestMoveToHead_SingleNode_IsNoOp() {
 	s.Require().Nil(node1.Next())
 }
 
+// LinkedListMoveToTailTestSuite defines tests for the MoveToTail operation
+type LinkedListMoveToTailTestSuite struct {
+	suite.Suite
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_NilNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	list.Push(node1)
+
+	list.MoveToTail(nil)
+
+	s.Require().Equal(1, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node1, list.tail)
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_EmptyList_IsNoOp() {
+	list := New()
+	foreign := node.New(99, nil, nil)
+
+	list.MoveToTail(foreign)
+
+	s.Require().Equal(0, list.size)
+	s.Require().Nil(list.head)
+	s.Require().Nil(list.tail)
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_TailNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+
+	list.MoveToTail(node2)
+
+	s.Require().Equal(2, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node2, list.tail)
+	s.Require().Nil(node2.Next())
+	s.Require().Equal(node1, node2.Prev())
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_HeadNode() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	node3 := node.New(3, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+	list.Push(node3)
+
+	list.MoveToTail(node1)
+
+	// Order is now 2, 3, 1
+	s.Require().Equal(3, list.size)
+	s.Require().Equal(node2, list.head)
+	s.Require().Equal(node1, list.tail)
+	s.Require().Nil(node2.Prev())
+	s.Require().Equal(node3, node2.Next())
+	s.Require().Equal(node2, node3.Prev())
+	s.Require().Equal(node1, node3.Next())
+	s.Require().Equal(node3, node1.Prev())
+	s.Require().Nil(node1.Next())
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_MiddleNode() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	node2 := node.New(2, nil, nil)
+	node3 := node.New(3, nil, nil)
+	list.Push(node1)
+	list.Push(node2)
+	list.Push(node3)
+
+	list.MoveToTail(node2)
+
+	// Order is now 1, 3, 2
+	s.Require().Equal(3, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node2, list.tail)
+	s.Require().Nil(node1.Prev())
+	s.Require().Equal(node3, node1.Next())
+	s.Require().Equal(node1, node3.Prev())
+	s.Require().Equal(node2, node3.Next())
+	s.Require().Equal(node3, node2.Prev())
+	s.Require().Nil(node2.Next())
+}
+
+func (s *LinkedListMoveToTailTestSuite) TestMoveToTail_SingleNode_IsNoOp() {
+	list := New()
+	node1 := node.New(1, nil, nil)
+	list.Push(node1)
+
+	list.MoveToTail(node1)
+
+	s.Require().Equal(1, list.size)
+	s.Require().Equal(node1, list.head)
+	s.Require().Equal(node1, list.tail)
+	s.Require().Nil(node1.Prev())
+	s.Require().Nil(node1.Next())
+}
+
 // TestSuite runners
 func TestLinkedListBasicTestSuite(t *testing.T) {
 	suite.Run(t, new(LinkedListBasicTestSuite))
@@ -517,4 +621,8 @@ func TestLinkedListIDWorkflowTestSuite(t *testing.T) {
 
 func TestLinkedListMoveToHeadTestSuite(t *testing.T) {
 	suite.Run(t, new(LinkedListMoveToHeadTestSuite))
+}
+
+func TestLinkedListMoveToTailTestSuite(t *testing.T) {
+	suite.Run(t, new(LinkedListMoveToTailTestSuite))
 }
