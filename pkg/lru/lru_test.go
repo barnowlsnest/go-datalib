@@ -254,6 +254,53 @@ func (s *LRUTestSuite) TestDelete_FreesCapacityForReinsertion() {
 	s.Require().Equal(3, *got3)
 }
 
+func (s *LRUTestSuite) TestClear_RemovesAllEntries() {
+	cache := New[int](4)
+	cache.Put(1, new(1))
+	cache.Put(2, new(2))
+	cache.Put(3, new(3))
+
+	cache.Clear()
+
+	s.Require().Equal(0, cache.Len())
+
+	for _, key := range []uint64{1, 2, 3} {
+		_, err := cache.Get(key)
+		s.Require().ErrorIs(err, ErrCacheMiss)
+	}
+}
+
+func (s *LRUTestSuite) TestClear_EmptyCacheIsNoOp() {
+	cache := New[int](4)
+
+	cache.Clear()
+
+	s.Require().Equal(0, cache.Len())
+}
+
+func (s *LRUTestSuite) TestClear_PreservesCapacityForReuse() {
+	cache := New[int](2)
+	cache.Put(1, new(1))
+	cache.Put(2, new(2))
+
+	cache.Clear()
+
+	// The cache is reusable at full capacity and its recency list is reset:
+	// filling it exactly must not evict anything.
+	cache.Put(3, new(3))
+	cache.Put(4, new(4))
+
+	s.Require().Equal(2, cache.Len())
+
+	got3, err := cache.Get(3)
+	s.Require().NoError(err)
+	s.Require().Equal(3, *got3)
+
+	got4, err := cache.Get(4)
+	s.Require().NoError(err)
+	s.Require().Equal(4, *got4)
+}
+
 func TestLRUTestSuite(t *testing.T) {
 	suite.Run(t, new(LRUTestSuite))
 }

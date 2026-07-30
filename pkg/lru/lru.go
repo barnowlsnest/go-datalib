@@ -116,6 +116,16 @@ func (lru *LRU[T]) Delete(keys ...uint64) {
 	}
 }
 
+// Clear removes all entries from the cache, leaving it empty while preserving
+// its capacity.
+func (lru *LRU[T]) Clear() {
+	lru.mux.Lock()
+	defer lru.mux.Unlock()
+
+	lru.cache = make(map[uint64]*entry[T])
+	lru.usage = list.New()
+}
+
 // evict removes the least recently used entry (the list tail).
 //
 // Callers must hold lru.mux.
