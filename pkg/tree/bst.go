@@ -551,7 +551,7 @@ func (bst *BST[T]) Height() int {
 		levelSize := q.Size()
 		height++
 
-		for i := 0; i < levelSize; i++ {
+		for range levelSize {
 			n := q.Dequeue()
 			if n == nil {
 				continue
