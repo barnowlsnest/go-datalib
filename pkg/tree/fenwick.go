@@ -55,7 +55,7 @@ func FromSlice[T constraints.Integer | constraints.Float](data []T) *Fenwick[T] 
 	}
 
 	// Build tree by updating each element
-	for i := 0; i < n; i++ {
+	for i := range n {
 		tree.Update(i+1, data[i]) // Convert to 1-indexed
 	}
 

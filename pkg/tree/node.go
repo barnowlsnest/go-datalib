@@ -1,14 +1,3 @@
-// Package mtree provides a generic multi-way tree (M-Tree) implementation with support
-// for hierarchical data structures, node operations, and cycle detection.
-//
-// The package offers:
-//   - Generic Node[T] type for building tree structures with any comparable type
-//   - Configurable maximum breadth (max children per node)
-//   - Parent-child relationship management with automatic level tracking
-//   - Tree traversal and node selection operations
-//   - Concurrent-safe node selection with context support
-//   - Hierarchy model builder with cycle detection
-//   - Node swapping and movement operations
 package tree
 
 import (
@@ -372,7 +361,6 @@ func (n *Node[T]) SelectOneChildByEachValue(ctx context.Context, values ...T) (m
 	errCh := make(chan error, 1)
 
 	for val := range dedup {
-		val := val // Required: capture loop variable for goroutine closure
 		eg.Go(func() error {
 			child, err := n.SelectOneChildFunc(func(n *Node[T]) bool {
 				return n.Val() == val
