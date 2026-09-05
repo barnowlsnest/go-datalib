@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Go data structures library (`go-datalib` v5) providing fundamental data structures including linked lists, stacks, queues, trees (BST, B-tree, heap, Fenwick, segment), directed acyclic graphs, and a thread-safe serial ID generator. The module uses Go 1.25+ features including generics and range-over-func iterators.
+This is a Go data structures library (`go-datalib` v5) providing fundamental data structures including linked lists, stacks, queues, trees (BST, B-tree, heap, Fenwick, segment), directed acyclic graphs, an LRU cache, and a thread-safe serial ID generator. The module uses modern Go features including generics and range-over-func iterators.
 
-**Module:** `github.com/barnowlsnest/go-datalib/v5`
+**Module:** `github.com/barnowlsnest/go-datalib/v5` (see `go.mod` for the required Go version)
 
 ## Commands
 
@@ -31,7 +31,7 @@ This is a Go data structures library (`go-datalib` v5) providing fundamental dat
 
 ### Core Components
 
-The library is structured with a layered architecture across five packages:
+The library is structured with a layered architecture across six packages:
 
 1. **Node Package** (`pkg/node/`): Provides the fundamental `Node` type for doubly-linked list structures
    - Immutable ID field (uint64) with getter access
@@ -67,7 +67,13 @@ The library is structured with a layered architecture across five packages:
    - Uses `uuid.UUID` for IDs; type aliases for `NodeID`, `EdgeID`, `GroupName`
    - Cycle detection and validation
 
-5. **Serial Package** (`pkg/serial/`): Thread-safe sharded ID generator
+5. **LRU Package** (`pkg/lru/`): Generic, thread-safe Least-Recently-Used cache
+   - `LRU[T any]` keyed by `uint64`, backed by `pkg/list.LinkedList` (recency order) plus a map for O(1) lookup
+   - `New(capacity int)` falls back to `defaultLRUCapacity` (1024) for non-positive capacity
+   - `Put()`, `Get()` (returns `ErrCacheMiss` on miss), eviction of the least-recently-used entry at capacity
+   - Synchronized via an internal `sync.Mutex`
+
+6. **Serial Package** (`pkg/serial/`): Thread-safe sharded ID generator
    - `Serial` type with 64 cache-line-aligned shards to prevent false sharing
    - `Next(key string) uint64` and `Current(key string) uint64`
    - FNV-1a hashing for key distribution
@@ -98,6 +104,7 @@ The project uses comprehensive test suites with testify:
 - **List package**: Functional tests for LinkedList, Stack, and Queue including edge cases
 - **Tree package**: Tests for BST, B-tree, heap, Fenwick tree, segment, hierarchy, and generic nodes
 - **DAG package**: Graph construction, edge validation, and error handling tests
+- **LRU package**: Capacity defaulting, hit/miss behavior, eviction order, and concurrency
 - **Serial package**: Concurrency tests and benchmarks for sharded ID generation
 - **Coverage**: All packages maintain thorough test coverage; 80% minimum enforced
 
@@ -106,9 +113,8 @@ The project uses comprehensive test suites with testify:
 - All struct fields are private; use provided getter/setter methods
 - Node IDs are uint64 and immutable after creation
 - LinkedList, Stack, and Queue are not thread-safe; external synchronization required for concurrent access
-- Serial package is thread-safe by design (sharded atomics)
+- Serial package is thread-safe by design (sharded atomics); LRU is thread-safe via an internal mutex
 - Test files use testify/assert and testify/suite for organized test structure
-- Go 1.25+ required (range-over-func, generics with constraints)
 
 ## Sanity Checks
 

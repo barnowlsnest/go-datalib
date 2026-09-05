@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"iter"
+	"slices"
 
-	"golang.org/x/exp/slices"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/barnowlsnest/go-datalib/v5/pkg/serial"
