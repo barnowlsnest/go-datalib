@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Go data structures library (`go-datalib` v5) providing fundamental data structures including linked lists, stacks, queues, trees (BST, B-tree, heap, Fenwick, segment), directed acyclic graphs, an LRU cache, and a thread-safe serial ID generator. The module uses modern Go features including generics and range-over-func iterators.
 
-**Module:** `github.com/barnowlsnest/go-datalib/v5` (Go 1.26.5, see `go.mod`)
+**Module:** `github.com/barnowlsnest/go-datalib/v5` (see `go.mod` for the required Go version)
 
 ## Commands
 
