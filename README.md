@@ -1,13 +1,39 @@
 # go-datalib
 
-A Go library providing fundamental data structures.
+[![Go Version](https://img.shields.io/badge/go-1.27+-blue.svg)](https://golang.org/doc/devel/release.html)
+[![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Coverage](https://img.shields.io/badge/coverage-95%25-brightgreen.svg)](https://github.com/barnowlsnest/go-datalib)
+[![Go Reference](https://pkg.go.dev/badge/github.com/barnowlsnest/go-datalib/v5.svg)](https://pkg.go.dev/github.com/barnowlsnest/go-datalib/v5)
+
+A dependency-light Go library of fundamental, generic data structures: linked lists,
+stacks, queues, trees (BST, B-tree, heap, Fenwick, segment, multi-way), a DAG, an LRU
+cache, and a sharded ID generator.
+
+- **Generic** - built on Go generics and `cmp.Ordered`/`comparable` constraints, no `any` casting
+- **Idiomatic iteration** - range-over-func via the standard library `iter` package
+- **Well tested** - testify suites across every package, 80% coverage enforced in CI (currently ~95%)
+- **Small surface** - only `google/uuid`, `golang.org/x/exp` and `golang.org/x/sync` outside the standard library
+- **Predictable performance** - documented complexity per structure, zero-allocation hot paths where possible
+
+## Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Performance](#performance)
+- [Architecture](#architecture)
+- [Testing](#testing)
+- [Development](#development)
+- [Contributing](#contributing)
+- [Versioning](#versioning)
+- [License](#license)
 
 ## Features
 
 ### Data Structures
 
 #### Linear Data Structures
-- **LinkedList** - Doubly-linked list with O(1) operations at both ends
+- **LinkedList** - Doubly-linked list with O(1) operations at both ends, plus O(1) `MoveToHead`/`MoveToTail` recency relinking
 - **Stack** - LIFO data structure built on LinkedList
 - **Queue** - FIFO data structure built on LinkedList
 - **Node** - Foundation for building custom linked data structures
@@ -24,7 +50,7 @@ A Go library providing fundamental data structures.
 - **DAG (Directed Acyclic Graph)** - Directed graph with cycle detection via Kahn's algorithm, group-based node organization
 
 #### Caching
-- **LRU (Least Recently Used)** - Generic, thread-safe LRU cache with O(1) `Put`/`Get` and automatic eviction of the least recently used entry at capacity
+- **LRU (Least Recently Used)** - Generic, thread-safe LRU cache with O(1) `Put`/`Get`/`Delete`, `Clear`, and automatic eviction of the least recently used entry at capacity
 
 ### Utilities
 
@@ -35,23 +61,47 @@ A Go library providing fundamental data structures.
 
 ```bash
 go get github.com/barnowlsnest/go-datalib/v5
-
 ```
+
+Requires the Go version declared in [go.mod](go.mod) (currently Go 1.27), since the
+library relies on generics and the standard library `iter` package for range-over-func
+iteration.
 
 ## Quick Start
 
 ### LinkedList
 
 ```go
-import "github.com/barnowlsnest/go-datalib/v5/pkg/list"
-import "github.com/barnowlsnest/go-datalib/v5/pkg/node"
+import (
+	"github.com/barnowlsnest/go-datalib/v5/pkg/list"
+	"github.com/barnowlsnest/go-datalib/v5/pkg/node"
+)
 
+l := list.New()
 
-list := list.New()
-list.Push(node.New(1, nil, nil))
-list.Push(node.New(2, nil, nil))
+first := node.New(1, nil, nil)
+second := node.ID(2) // node.ID is shorthand for an unlinked node
+l.Push(first)
+l.Push(second)
 
-n := list.Pop() // Returns node with ID 2
+// Inspect the ends without removing (returns a copy plus an ok flag)
+head, okHead := l.Head()
+tail, okTail := l.Tail()
+
+// ID-only convenience API
+l.PushID(3)
+l.UnshiftID(0)
+headID, errHead := l.HeadID()  // node.ErrNil when the list is empty
+tailID, errTail := l.TailID()
+
+// O(1) recency relinking; requires a node that is in the list, otherwise it is a no-op
+l.MoveToHead(second)
+l.MoveToTail(first)
+
+n := l.Pop()            // Remove and return the tail node
+front := l.Shift()      // Remove and return the head node
+id, errPop := l.PopID() // Remove the tail and return only its ID
+size := l.Size()
 ```
 
 ### Stack
@@ -96,10 +146,12 @@ size := q.Size()
 ```go
 import "github.com/barnowlsnest/go-datalib/v5/pkg/serial"
 
-// Create instance or use singleton
-gen := &serial.Serial{}
-// or
-gen := serial.Seq()  // Global singleton
+// Use the package-level singleton...
+gen := serial.Seq()
+
+// ...or create an independent generator with its own counters
+own := &serial.Serial{}
+_ = own
 
 // Generate sequential IDs per key
 id1 := gen.Next("user")     // Returns 1
@@ -189,6 +241,15 @@ max, _ := maxHeap.Pop()  // Removes and returns 70 (largest)
 // Build heap from existing slice (O(n) heapify)
 data := []int{3, 2, 1, 5, 4}
 heap := tree.HeapFromSlice(data, func(a, b int) bool { return a < b })
+
+// Custom comparator, optionally with a preallocated backing slice
+byLength := func(a, b string) bool { return len(a) < len(b) }
+shortest := tree.NewHeap[string](byLength)
+buffered := tree.NewWithCapacity[string](byLength, 64)
+
+// Inspect and reset
+snapshot := heap.ToSlice() // Copy of the backing slice (heap order)
+heap.Clear()
 ```
 
 ### Fenwick Tree (Binary Indexed Tree)
@@ -210,8 +271,17 @@ ft.Update(3, -2)  // Subtract 2 from element at index 3
 // Range sum query
 rangeSum := ft.RangeQuery(2, 7)  // Sum from index 2 to 7
 
+// Absolute set/get of a single element (1-indexed)
+ft.Set(3, 10)      // Overwrite element at index 3 with 10
+value := ft.Get(3) // Returns 10
+
+// Inspect and reset
+values := ft.ToSlice() // Copy of the underlying values
+ft.Clear()             // Reset all elements to zero
+
 // Create empty tree
 ft2 := tree.NewFenwick[int](100)  // Size 100
+size := ft2.Size()
 ```
 
 ### Segment Tree
@@ -274,6 +344,14 @@ seg.ForEachNodeAtLevel(1, func(n *tree.Node[string]) bool {
 // Selection
 nodes := seg.Select(func(n *tree.Node[string]) bool {
 	return n.Val() == "child1"
+})
+
+one, _ := seg.SelectOne(func(n *tree.Node[string]) bool {
+	return n.Val() == "child2"
+})
+
+atLevel, _ := seg.SelectAtLevel(1, func(n *tree.Node[string]) bool {
+	return true
 })
 
 // Node management
@@ -364,11 +442,9 @@ g.AddNode(task3)
 g.AddEdge(task1, task2)  // task1 -> task2
 g.AddEdge(task2, task3)  // task2 -> task3
 
-// Check if graph is acyclic (async via channel).
-// IsAcyclic is shown here as returning a channel of bool. If your implementation
-// can fail, prefer returning a separate error channel or a result struct
-// (e.g., `type AcyclicResult struct { OK bool; Err error }`) and handle Err here.
-isAcyclic := <-g.IsAcyclic()  // Returns true if no cycles; handle any reported errors as appropriate.
+// Check if graph is acyclic. IsAcyclic runs Kahn's algorithm in a goroutine
+// and returns a <-chan bool that yields a single result.
+isAcyclic := <-g.IsAcyclic()  // true if the graph has no cycles
 
 // Query relationships
 hasEdge := g.HasEdge(task1, task2)           // true
@@ -483,6 +559,11 @@ cache.Put(3, &v3)
 
 _, err = cache.Get(2)        // Returns nil, lru.ErrCacheMiss
 size := cache.Len()          // Number of cached entries: 2
+
+// Remove specific keys (missing keys are ignored) or drop everything.
+// Both free capacity for reuse; the configured capacity is preserved.
+cache.Delete(1, 3)
+cache.Clear()
 ```
 
 ## Performance
@@ -526,7 +607,7 @@ All data structures return copies of nodes during Pop/Shift/Dequeue operations w
 | B-Tree         | O(log n)                 | O(log n)                 | O(log n)                 | O(n)   |
 | MTree          | O(1) attach              | O(1) detach              | O(n) traversal           | O(n)   |
 | DAG            | O(1)                     | O(1)                     | O(V+E) cycle detection   | O(V+E) |
-| LRU Cache      | O(1)                     | O(1) evict               | O(1)                     | O(n)   |
+| LRU Cache      | O(1)                     | O(1) delete/evict        | O(1)                     | O(n)   |
 
 ### Performance Optimizations
 
@@ -577,6 +658,16 @@ task go-bench-serial  # Run serial package benchmarks
 task go-update     # Update dependencies (go mod tidy)
 ```
 
+### Continuous Integration
+
+GitHub Actions runs on every push and pull request to `main`:
+
+- `.github/workflows/build.yml` - `task go-build` and `task go-test`
+- `.github/workflows/golangci-lint.yml` - `golangci-lint` using [.golangci.yml](.golangci.yml)
+
+Both jobs resolve the toolchain from `go-version-file: go.mod`, so bumping the Go
+version in `go.mod` is all that is needed to move CI.
+
 ### Quick Commands
 
 ```bash
@@ -585,6 +676,52 @@ task sanity        # Format, vet, lint, test, coverage check
 task build         # Full build pipeline
 ```
 
+## Contributing
+
+Contributions are welcome - bug reports, feature requests and pull requests alike.
+
+1. Open an issue first for anything larger than a bug fix, so the design can be agreed
+   before code is written.
+2. Fork the repository and create a topic branch off `main`.
+3. Add or update tests for your change. New code is expected to keep total coverage
+   above the enforced 80% threshold.
+4. Run the full check suite before pushing:
+
+   ```bash
+   task sanity
+   ```
+
+   This formats, vets, lints, tests and verifies coverage - the same checks CI runs.
+5. Keep commits focused and use [Conventional Commits](https://www.conventionalcommits.org)
+   style subjects (`feat:`, `fix:`, `docs:`, `chore:`), matching the existing history.
+6. Open a pull request against `main` and describe the motivation along with the change.
+
+Style expectations for this codebase:
+
+- All struct fields stay private; expose behaviour through methods.
+- Every exported identifier carries a doc comment.
+- Data structures document their thread-safety guarantees explicitly.
+- Prefer the standard library over new dependencies.
+
+### Reporting Issues
+
+Please include the library version, your Go version, and a minimal reproducible example.
+For suspected security issues, contact the maintainers privately rather than opening a
+public issue.
+
+## Versioning
+
+This module follows [Semantic Versioning](https://semver.org) and uses Go module major
+version suffixes. The current major version is `v5`, so the import path is:
+
+```go
+import "github.com/barnowlsnest/go-datalib/v5/pkg/..."
+```
+
+Breaking changes ship only in a new major version with a new import path. The minimum
+supported Go version is the one declared in [go.mod](go.mod) and may be raised in a
+minor release.
+
 ## License
 
-See [LICENSE](LICENSE) file for details.
+Released under the MIT License. See [LICENSE](LICENSE) for the full text.
