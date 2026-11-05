@@ -12,7 +12,7 @@ cache, and a sharded ID generator.
 - **Generic** - built on Go generics and `cmp.Ordered`/`comparable` constraints, no `any` casting
 - **Idiomatic iteration** - range-over-func via the standard library `iter` package
 - **Well tested** - testify suites across every package, 80% coverage enforced in CI (currently ~95%)
-- **Small surface** - only `google/uuid`, `golang.org/x/exp` and `golang.org/x/sync` outside the standard library
+- **Small surface** - only `google/uuid`, `golang.org/x/exp`, `golang.org/x/sync` and `golang.org/x/sys` outside the standard library
 - **Predictable performance** - documented complexity per structure, zero-allocation hot paths where possible
 
 ## Contents
@@ -54,7 +54,7 @@ cache, and a sharded ID generator.
 
 ### Utilities
 
-- **Serial** - High-performance, thread-safe ID generator with sharding and cache-line alignment
+- **Serial** - High-performance, thread-safe ID generator with sharding and architecture-aware cache-line padding
 - **NSum** - Fast hash function for combining uint64 pairs using the golden ratio
 
 ## Installation
