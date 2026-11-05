@@ -9,7 +9,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
+	"golang.org/x/sys/cpu"
 )
+
+// cacheLinePadSize is the architecture-specific cache line size provided by cpu.CacheLinePad.
+const cacheLinePadSize = unsafe.Sizeof(cpu.CacheLinePad{})
+
+// shardSize is the expected size of alignedShard: the counter plus one full cache line of padding.
+const shardSize = unsafe.Sizeof(uint64(0)) + cacheLinePadSize
 
 // AlignmentTestSuite verifies memory alignment and struct size
 type AlignmentTestSuite struct {
@@ -17,10 +24,10 @@ type AlignmentTestSuite struct {
 }
 
 func (s *AlignmentTestSuite) TestAlignedShardSize() {
-	// Verify that alignedShard is exactly one cache line (64 bytes)
+	// Verify that alignedShard is the counter followed by a full cache line of padding
 	size := unsafe.Sizeof(alignedShard{})
-	assert.Equal(s.T(), uintptr(cacheLineBytes), size,
-		"alignedShard should be exactly %d bytes to occupy one cache line", cacheLineBytes)
+	assert.Equal(s.T(), shardSize, size,
+		"alignedShard should be %d bytes (8-byte counter + %d-byte cache line pad)", shardSize, cacheLinePadSize)
 }
 
 func (s *AlignmentTestSuite) TestAlignedShardAlignment() {
@@ -40,17 +47,19 @@ func (s *AlignmentTestSuite) TestSerialShardArrayAlignment() {
 	shard1Addr := uintptr(unsafe.Pointer(&serial.shards[1]))
 
 	distance := shard1Addr - shard0Addr
-	assert.Equal(s.T(), uintptr(cacheLineBytes), distance,
-		"consecutive shards should be %d bytes apart", cacheLineBytes)
+	assert.Equal(s.T(), shardSize, distance,
+		"consecutive shards should be %d bytes apart", shardSize)
+	assert.GreaterOrEqual(s.T(), distance, cacheLinePadSize,
+		"consecutive shard counters must never share a %d-byte cache line", cacheLinePadSize)
 }
 
 func (s *AlignmentTestSuite) TestSerialStructSize() {
 	// Verify total size of Serial struct
 	size := unsafe.Sizeof(Serial{})
-	expectedSize := uintptr(atomicSharding * cacheLineBytes)
+	expectedSize := atomicSharding * shardSize
 	assert.Equal(s.T(), expectedSize, size,
 		"Serial struct should be %d bytes (%d shards * %d bytes)",
-		expectedSize, atomicSharding, cacheLineBytes)
+		expectedSize, atomicSharding, shardSize)
 }
 
 // BasicFunctionalityTestSuite tests core functionality

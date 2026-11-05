@@ -80,7 +80,7 @@ The library is structured with a layered architecture across six packages:
    - Synchronized via an internal `sync.Mutex`
 
 6. **Serial Package** (`pkg/serial/`): Thread-safe sharded ID generator
-   - `Serial` type with 64 cache-line-aligned shards to prevent false sharing
+   - `Serial` type with 64 shards padded with `cpu.CacheLinePad` (per-architecture cache line size) to prevent false sharing
    - `Next(key string) uint64` and `Current(key string) uint64`; `Seq()` returns a package-level singleton
    - FNV-1a hashing for key distribution
    - `NSum(from, to uint64) uint64` for order-independent hash combining (golden-ratio mixing)
@@ -91,6 +91,7 @@ The library is structured with a layered architecture across six packages:
 - `github.com/stretchr/testify` — Testing framework
 - `golang.org/x/exp` — Numeric constraints (`constraints` package, used by Fenwick)
 - `golang.org/x/sync` — Errgroup for concurrent operations (tree node selection)
+- `golang.org/x/sys` — `cpu.CacheLinePad` for architecture-aware shard padding (serial package)
 
 Iterators come from the stdlib `iter` package, and sorting from stdlib `slices`; no shim packages are used.
 
