@@ -18,6 +18,7 @@ cache, and a sharded ID generator.
 ## Contents
 
 - [Features](#features)
+- [How It Works](#how-it-works)
 - [Installation](#installation)
 - [Quick Start](#quick-start)
 - [Performance](#performance)
@@ -56,6 +57,74 @@ cache, and a sharded ID generator.
 
 - **Serial** - High-performance, thread-safe ID generator with sharding and architecture-aware cache-line padding
 - **NSum** - Fast hash function for combining uint64 pairs using the golden ratio
+
+## How It Works
+
+Animated illustrations of each package (sources in [`assets/`](assets)).
+
+### `pkg/node` — linked nodes and iterators
+
+Nodes carry an immutable ID plus `next`/`prev` pointers; `node.NextNodes` and
+`node.PrevNodes` walk the chain in either direction as `iter.Seq2[int, *Node]`.
+
+![pkg/node: forward and backward iteration](assets/node.svg)
+
+### `pkg/list` — LinkedList, Stack and Queue
+
+`LinkedList` is O(1) at both ends; `Stack` pushes and pops at the tail, `Queue`
+enqueues at the rear and dequeues from the front.
+
+![pkg/list: stack push/pop and queue enqueue/dequeue](assets/list.svg)
+
+### `pkg/tree` — BST, heap, Fenwick, B-tree and segment
+
+**BST** — `Insert` compares and descends until it finds an empty slot; `InOrder` then
+yields the keys in sorted order.
+
+![pkg/tree: BST insert and in-order traversal](assets/tree.svg)
+
+**Heap** — a binary heap stored in a slice: `Push` appends and bubbles up,
+`Pop` moves the last element to the root and bubbles it down.
+
+![pkg/tree: min-heap push and pop](assets/heap.svg)
+
+**Fenwick** — `t[i]` holds the sum of the `i & -i` elements ending at `i`;
+`Query` strips the lowest set bit to collect a prefix sum, `Update` adds it to
+reach every range that covers the index.
+
+![pkg/tree: Fenwick prefix query and point update](assets/fenwick.svg)
+
+**BTree** — nodes hold up to `2t-1` keys; `Insert` splits a full child before
+descending into it, lifting the median, so every leaf stays at the same depth.
+
+![pkg/tree: B-tree insert with a proactive split, then Range](assets/btree.svg)
+
+**Segment** — a multi-way tree bounded by `maxBreadth × maxDepth`, with a node
+map for O(1) lookup by ID and a `levelMap` index used by level-based selection.
+
+![pkg/tree: segment insert, depth limit, RemovePromote and level visit](assets/segment.svg)
+
+### `pkg/dag` — grouped DAG with Kahn's algorithm
+
+`IsAcyclic` repeatedly dequeues nodes with in-degree 0 and drops their edges; if
+every node drains, the graph has no cycle.
+
+![pkg/dag: Kahn's algorithm draining a grouped graph](assets/dag.svg)
+
+### `pkg/lru` — least-recently-used cache
+
+`Put` unshifts new keys at the head, `Get` moves a hit to the head, and once at
+capacity the tail (least recently used) entry is evicted.
+
+![pkg/lru: put, get and eviction at capacity 3](assets/lru.svg)
+
+### `pkg/serial` — sharded ID generator
+
+`Next(key)` hashes the key to one of 64 cache-line-padded shards and atomically
+increments that shard's counter, so the same key always gets the next value in
+its own sequence.
+
+![pkg/serial: keys hashed to padded atomic shards](assets/serial.svg)
 
 ## Installation
 
