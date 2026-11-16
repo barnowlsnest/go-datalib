@@ -4,19 +4,14 @@ import (
 	"hash/fnv"
 	"sync"
 	"sync/atomic"
+
+	"golang.org/x/sys/cpu"
 )
 
-const (
-	// cacheLineBytes defines the typical CPU cache line size in bytes.
-	// This constant is used for memory alignment to prevent false sharing
-	// between different shards in concurrent access scenarios.
-	cacheLineBytes = 64
-
-	// atomicSharding defines the number of shards used for distributing
-	// atomic operations. This value should be a power of 2 for efficient
-	// bit masking in the hash function.
-	atomicSharding = 64
-)
+// atomicSharding defines the number of shards used for distributing
+// atomic operations. This value should be a power of 2 for efficient
+// bit masking in the hash function.
+const atomicSharding = 64
 
 type (
 	// alignedShard represents a single shard in the serial ID generator.
@@ -26,16 +21,19 @@ type (
 	// that reside on the same cache line, causing unnecessary cache invalidations
 	// and performance degradation.
 	//
-	// The padding ensures that each shard occupies its own cache line,
-	// allowing truly independent atomic operations across different shards.
+	// The padding uses cpu.CacheLinePad, which is sized to the cache line of
+	// the target architecture (e.g. 64 bytes on amd64, 128 bytes on arm64),
+	// so no two shard counters ever share a cache line, allowing truly
+	// independent atomic operations across different shards.
 	alignedShard struct {
 		// id is the atomic counter for this shard.
 		// It's incremented atomically to generate unique sequential IDs.
 		id uint64
 
 		// _ is padding to prevent false sharing between shards.
-		// The padding size ensures each shard occupies exactly one cache line.
-		_ [cacheLineBytes - 8]byte // should prevent false sharing
+		// It spans a full architecture-specific cache line, guaranteeing
+		// that adjacent counters are always on different cache lines.
+		_ cpu.CacheLinePad
 	}
 
 	// Serial implements a high-performance, thread-safe serial ID generator.
