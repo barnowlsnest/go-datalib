@@ -1,6 +1,7 @@
 package lru
 
 import (
+	"math"
 	"testing"
 
 	"github.com/stretchr/testify/suite"
@@ -299,6 +300,94 @@ func (s *LRUTestSuite) TestClear_PreservesCapacityForReuse() {
 	got4, err := cache.Get(4)
 	s.Require().NoError(err)
 	s.Require().Equal(4, *got4)
+}
+
+func (s *LRUTestSuite) TestGetRange() {
+	testCases := []struct {
+		name        string
+		keys        []uint64
+		dst         []*int
+		from        uint64
+		to          uint64
+		expected    []int
+		expectedErr error
+	}{
+		{name: "all keys cached", keys: []uint64{1, 2, 3, 4}, from: 1, to: 4, expected: []int{1, 2, 3, 4}},
+		{name: "single key", keys: []uint64{7}, from: 7, to: 7, expected: []int{7}},
+		{name: "subrange", keys: []uint64{1, 2, 3, 4, 5}, from: 2, to: 4, expected: []int{2, 3, 4}},
+		{
+			name: "miss partway returns the prefix", keys: []uint64{1, 2, 4}, from: 1, to: 4,
+			expected: []int{1, 2}, expectedErr: ErrCacheMiss,
+		},
+		{
+			name: "miss at the first key", keys: []uint64{2, 3}, from: 1, to: 3,
+			expected: []int{}, expectedErr: ErrCacheMiss,
+		},
+		{name: "from above to", keys: []uint64{1, 2}, from: 2, to: 1, expected: []int{}},
+		{name: "empty cache", from: 1, to: 3, expected: []int{}, expectedErr: ErrCacheMiss},
+		{
+			name: "appends to dst", keys: []uint64{1, 2}, dst: []*int{new(100)}, from: 1, to: 2,
+			expected: []int{100, 1, 2},
+		},
+		{
+			name: "range ending at max key", keys: []uint64{math.MaxUint64 - 1, math.MaxUint64},
+			from: math.MaxUint64 - 1, to: math.MaxUint64, expected: []int{-2, -1},
+		},
+	}
+
+	for _, tc := range testCases {
+		s.Run(tc.name, func() {
+			cache := New[int](8)
+			for _, key := range tc.keys {
+				cache.Put(key, new(valueOf(key)))
+			}
+
+			values, err := cache.GetRange(tc.from, tc.to, tc.dst)
+
+			actual := make([]int, 0, len(values))
+			for _, v := range values {
+				actual = append(actual, *v)
+			}
+
+			if tc.expectedErr != nil {
+				s.Require().ErrorIs(err, tc.expectedErr)
+			} else {
+				s.Require().NoError(err)
+			}
+			s.Require().Equal(tc.expected, actual)
+		})
+	}
+}
+
+// TestGetRange_RefreshesRecency checks that every returned key is marked used,
+// as one Get per key would.
+func (s *LRUTestSuite) TestGetRange_RefreshesRecency() {
+	cache := New[int](3)
+	cache.Put(1, new(1))
+	cache.Put(2, new(2))
+	cache.Put(3, new(3))
+
+	_, err := cache.GetRange(1, 2, nil)
+	s.Require().NoError(err)
+
+	cache.Put(4, new(4)) // evicts key 3, the least recently used
+
+	_, err = cache.Get(3)
+	s.Require().ErrorIs(err, ErrCacheMiss)
+
+	actual, err := cache.GetRange(1, 2, nil)
+	s.Require().NoError(err)
+	s.Require().Len(actual, 2)
+}
+
+// valueOf maps a key to the int stored for it in TestGetRange; keys near the
+// top of the uint64 range map to small negatives so they fit in an int.
+func valueOf(key uint64) int {
+	if key > math.MaxInt64 {
+		return -int(math.MaxUint64 - key + 1)
+	}
+
+	return int(key)
 }
 
 func TestLRUTestSuite(t *testing.T) {
