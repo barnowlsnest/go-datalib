@@ -86,6 +86,42 @@ func (lru *LRU[T]) Get(key uint64) (*T, error) {
 	return cached.value, nil
 }
 
+// GetRange appends the values for the consecutive keys from through to, in key
+// order, to dst and returns the extended slice. Each returned key is marked most
+// recently used, as Get would mark it.
+//
+// It stops at the first key that is not cached and returns the values found
+// before it together with ErrCacheMiss, so that key is from+len(added). A range
+// with from above to appends nothing.
+//
+// The whole range is read under one lock acquisition. Calling Get once per key
+// takes the lock once per key, which made the lock the bottleneck when many
+// readers fetched the same recent range at once.
+func (lru *LRU[T]) GetRange(from, to uint64, dst []*T) ([]*T, error) {
+	if from > to {
+		return dst, nil
+	}
+
+	lru.mux.Lock()
+	defer lru.mux.Unlock()
+
+	for key := from; ; key++ {
+		cached, ok := lru.cache[key]
+		if !ok {
+			return dst, ErrCacheMiss
+		}
+
+		lru.usage.MoveToHead(cached.node)
+		dst = append(dst, cached.value)
+
+		// Checked here rather than in the loop condition so a range ending at
+		// the largest key stops instead of wrapping around to zero.
+		if key == to {
+			return dst, nil
+		}
+	}
+}
+
 // Len returns the number of entries currently cached.
 func (lru *LRU[T]) Len() int {
 	lru.mux.Lock()

@@ -76,7 +76,7 @@ The library is structured with a layered architecture across six packages:
 5. **LRU Package** (`pkg/lru/`): Generic, thread-safe Least-Recently-Used cache
    - `LRU[T any]` keyed by `uint64` with `*T` values, backed by `pkg/list.LinkedList` (recency order) plus a map for O(1) lookup
    - `New(capacity int)` falls back to `defaultLRUCapacity` (1024) for non-positive capacity
-   - `Put()`, `Get()` (returns `ErrCacheMiss` on miss), `Delete(keys ...uint64)`, `Clear()`, `Len()`, and eviction of the least-recently-used entry at capacity
+   - `Put()`, `Get()` (returns `ErrCacheMiss` on miss), `GetRange()` (consecutive keys under one lock, stops at the first miss), `Delete(keys ...uint64)`, `Clear()`, `Len()`, and eviction of the least-recently-used entry at capacity
    - Synchronized via an internal `sync.Mutex`
 
 6. **Serial Package** (`pkg/serial/`): Thread-safe sharded ID generator
