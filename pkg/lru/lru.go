@@ -146,6 +146,43 @@ func (lru *LRU[T]) Delete(keys ...uint64) {
 	}
 }
 
+// DeleteRange removes every cached entry whose key is in from through to. A
+// range with from above to removes nothing.
+//
+// It visits whichever is smaller, the keys of the range or the cached entries,
+// so its cost is bounded by the capacity however wide the range is. Building
+// the range's keys for Delete costs memory and lock time that grow with the
+// range, which for a range of millions of keys blocks every other caller.
+func (lru *LRU[T]) DeleteRange(from, to uint64) {
+	if from > to {
+		return
+	}
+
+	lru.mux.Lock()
+	defer lru.mux.Unlock()
+
+	if to-from < uint64(len(lru.cache)) {
+		for key := from; ; key++ {
+			if cached, ok := lru.cache[key]; ok {
+				lru.remove(cached)
+			}
+
+			// Checked here rather than in the loop condition so a range ending at
+			// the largest key stops instead of wrapping around to zero.
+			if key == to {
+				return
+			}
+		}
+	}
+
+	// Deleting from a map while ranging over it is safe in Go.
+	for key, cached := range lru.cache {
+		if key >= from && key <= to {
+			lru.remove(cached)
+		}
+	}
+}
+
 // Clear removes all entries from the cache, leaving it empty while preserving
 // its capacity.
 func (lru *LRU[T]) Clear() {
@@ -154,6 +191,14 @@ func (lru *LRU[T]) Clear() {
 
 	lru.cache = make(map[uint64]*entry[T])
 	lru.usage = list.New()
+}
+
+// remove drops cached from the cache and the usage list.
+//
+// Callers must hold lru.mux.
+func (lru *LRU[T]) remove(cached *entry[T]) {
+	lru.usage.MoveToTail(cached.node)
+	lru.evict()
 }
 
 // evict removes the least recently used entry (the list tail).
